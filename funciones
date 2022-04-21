@@ -1,0 +1,79 @@
+--1.	Mostra el NIF_EMPRESA, el COD_RESIDU i el COST, arrodonit a les desenes.
+SELECT NIF_EMPRESA, COD_RESIDU, round(cost, -1) FROM trasllat_empresatransport;
+--2.	Mostra el NIF de les empreses que van realitzar un enviament durant el mes de juliol de 2017.
+SELECT NIF_EMPRESA,DATA_eNVIAMENT FROM TRASLLAT_EMPRESATRANSPORT WHERE TO_CHAR(DATA_ENVIAMENT, 'MON')= 'JUL' AND TO_CHAR(DATA_ENVIAMENT, 'YY')='17';
+select nif_empresa, data_enviament
+from trasllat_empresatransport
+where to_char(data_enviament,'yy')='17' and to_char(data_enviament, 'mm')='07';
+where data_enviament between '01/07/2017' and '31/07/2017';
+where data_enviament >'30/06/2017' and data_enviament < '01/08/2017';
+--3.	Mostra el codi de destí, i la quantitat de residu que es van rebre durant el primer dia de cada més durant l'any 2016.
+select cod_residu, quantitat_trasllat, data_arribada
+from trasllat
+where data_arribada in (select distinct (date_trunc('month',data_arribada))::date
+from trasllat where to_char((date_trunc('month',data_arribada))::date, 'yy')='16');
+
+
+/*4.	Mostra el codi de residu dels residus que van ser enviats durant l'any 2017.*/
+	SELECT cod_residu, data_enviament FROM trasllat WHERE TO_CHAR(data_enviament,'YYYY')='2017';
+
+/*5.	Mostra el NIF i Nom de l'empresa productora de totes les empreses productores. Els noms s'ha de mostrar amb la primera lletra en majúsculas i la resta en minúscules.*/
+
+SELECT nif_empresa, initcap(nom_empresa) from empresaproductora;
+
+/*6.	Mostra la primera paraula del Nom de l’empresa productora (pe INTERCONTINENTAL QUIMICA serà INTERCONTINENTAL).*/
+
+select nom_empresa, split_part(nom_empresa,' ',1) from empresaproductora;
+
+/*7.	Mostra la longitud del nom de l'empresa productora que al camp CIUTAT_EMPRESA contingui una 'I' després de la tercera posició*/
+
+SELECT length (nom_empresa), nom_empresa, ciutat_empresa
+FROM EMPRESAPRODUCTORA
+WHERE position ('i' in lower(ciutat_empresa)) > 3;
+
+
+/*8.	Mostra el tipus d'envàs en majúscules i el tractament en minúscules per als enviaments que has traslladat més de 100 tones i  s'han realitzat durant el segon trimestre de 2016.*/
+
+select upper(envas), lower(tractament), data_enviament
+from trasllat
+where quantitat_trasllat >100 and data_enviament between '01/04/2016' and '30/06/2016';
+
+/*9.	Mostra els codi de residus que tenen data d’enviament durant l’any actual.*/
+
+SELECT cod_residu FROM trasllat WHERE TO_CHAR(data_enviament,'YYYY')=TO_CHAR(current_date,'YYYY');
+
+/*10.	Mostra el nombre de dies entre que han passat entre l’última data d’enviament d’un trasllat i la data actual.*/
+
+
+ select current_date - max(data_enviament) from trasllat;
+
+/*11.	 Mostra el nombre d’enviaments que han sigut realitzats (enviats) desprès del 20 de cada més.*/
+	SELECT data_enviament FROM trasllat WHERE TO_CHAR(data_enviament,'DD') > '20';
+	select count(*) from trasllat where to_char(data_enviament, 'dd')>'20';
+
+/*12.	Mostra el codi de residu i la quantitat, d’aquells residus que han sigut enviats durant el mes de abril.*/
+
+SELECT cod_residu, quantitat_trasllat,data_enviament FROM trasllat WHERE TO_CHAR(data_enviament, 'MM')= '04';
+
+
+/*13.	Quants tipus de tractaments diferents existeixen?*/
+  select distinct(tractament) from trasllat;
+  select count(distinct tractament) from trasllat;
+
+
+/*14.	Obté de la taula trasllats l’últim dia del mes per cadascuna de les dates d’arribada amb codi destí 22.*/
+
+select data_arribada,((date_trunc('MONTH', data_arribada)) + INTERVAL '1 MONTH - 1 day')::date from trasllat where cod_desti='22';
+
+/*15.	Obté el nom del destí de la taula Destí de la següent manera: ‘El nom del destí és: NOM_DESTÍ’ ‘i la seva ciutat: CIUTAT_DESTI’. Per poder realitzar aquesta tasca has de fer la funció CONCAT. */
+
+select concat(concat(concat('El nom del destí: ',nom_desti),' i la seva ciutat: '),ciutat_desti) from desti;
+select concat('El nom del destí: ',nom_desti,' i la seva ciutat: ',ciutat_desti) from desti;
+
+/*16.	A partir de la taula TRASLLAT_EMPRESATRANSPORT, obté la data_enviament formatada, de manera que aparegui el nom del més amb totes les seves lletres (month), el nombre de dia de mes (dd) i l'any (yyyy), per a aquells trasllat que s’hagin realitzat en tren.*/
+
+select to_char(data_enviament, 'month DD, YYYY'), tipus_transport as "Nova Data" from trasllat_empresatransport where lower(tipus_transport)='train';
+
+/*17.	Mostra el dia de la setmana i la quantitat de residu transportat d’aquells enviaments que s’ha dur a terme durant el dimarts i que hagin transportat una quantitat superior a 100 tones. Mostra el resultat ordenat per la quantitat (de gran a petit)*/
+
+select to_char(data_enviament, 'day'), quantitat_trasllat from trasllat where to_char(data_enviament,'d')='3' and quantitat_trasllat > 100 order by 2 desc;
