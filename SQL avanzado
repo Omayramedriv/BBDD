@@ -1,0 +1,110 @@
+/*Agrupa el total d'empreses de transport per tipus de transport que van realitzar enviaments de residus entre el 15/06/2016 i el 17/05/2017. La consulta ha de mostrar el tipus de transport i un camp esmentat Total_empreses amb la quantitat d'empreses de transport.*/
+
+select count(*) as "Total_empreses", tipus_transport
+from trasllat_empresatransport
+where data_enviament between '15/06/2016' and '17/05/2017'
+group by tipus_transport;
+
+/*Mostra la quantitat de km recorreguts segons el transport, durant els mesos de abril i maig de 2016.*/
+select sum(kms), tipus_transport
+from trasllat_empresatransport
+where to_char(data_enviament,'yyyy')='2016' and to_char(data_enviament,'mm') in('04','05')
+group by tipus_transport;
+
+/*Quina és la ciutat de destí que més residus ha rebut durant l'any 2016 i quina és aquesta quantitat.*/
+
+select d.cod_desti, d.nom_desti, sum(quantitat_trasllat)
+from desti d join trasllat t on d.cod_desti = t.cod_desti
+where to_char(t.data_arribada,'yyyy')='2016'
+group by d.cod_desti, d.nom_desti
+having sum(t.quantitat_trasllat) in (select max(a) from (select sum(quantitat_trasllat) as a
+from trasllat
+where to_char(data_arribada,'yyyy')='2016'
+    group by cod_desti) as b);
+
+/*Quina empresa transportista ha sigut contractada més vegades durant el primer trimestre de 2016 per les empreses productores.*/
+select e.nom_emptransport, count(*)
+from trasllat_empresatransport tet join empresatransportista e on tet.nif_emptransportista = e.nif_emptransportista
+where to_char(tet.data_enviament,'yyyy')='2016' and to_char(tet.data_enviament,'q')='1'
+group by e.nom_emptransport
+having count(*) in (select max(a) from  (select count(*) as a
+from trasllat_empresatransport tet join empresatransportista e on tet.nif_emptransportista = e.nif_emptransportista
+where to_char(tet.data_enviament,'yyyy')='2016' and to_char(tet.data_enviament,'q')='1'
+group by e.nom_emptransport) as b);
+
+/*Obtenir el nom i el cif de la empresa, d'aquella empresa (o empreses) que menys quantitat de residus han generat, els quals (residus) tenen un nivell de toxicitat més alt.*/
+select sum(quantitat_residu), cod_residu, e.nom_empresa, r.nif_empresa
+from residu r join empresaproductora e on r.nif_empresa = e.nif_empresa
+where toxicitat = (select max(toxicitat) from residu)
+group by r.nif_empresa, cod_residu, e.nom_empresa
+having sum(quantitat_residu) in
+       (select min(a) from (select sum(quantitat_residu) as a
+from residu
+where toxicitat = (select max(toxicitat) from residu)
+group by nif_empresa, cod_residu) as b);
+
+/*Quina empresa transportista ha sigut contractada menys vegades durant el segon semestre de 2016 per les empreses productores*/
+select count(*), e.nom_emptransport
+from trasllat_empresatransport tet join empresatransportista e
+    on tet.nif_emptransportista = e.nif_emptransportista
+where to_char(tet.data_enviament,'yyyy')='2016' and to_char(tet.data_enviament,'q')='2'
+group by e.nom_emptransport
+having count(*) in (select min(a) from (select count(*) as a
+from trasllat_empresatransport tet join empresatransportista e
+    on tet.nif_emptransportista = e.nif_emptransportista
+where to_char(tet.data_enviament,'yyyy')='2016' and to_char(tet.data_enviament,'q')='2'
+group by e.nom_emptransport) as b);
+
+/*Quina és la ciutat de destí que mes residus ha rebut durant l'any 2016 i quina és aquesta quantitat*/
+select sum(quantitat_trasllat), d.cod_desti, d.nom_desti
+from trasllat t join desti d on t.cod_desti = d.cod_desti
+where to_char(t.data_arribada,'yyyy')='2016'
+group by d.cod_desti, d.nom_desti
+having sum(quantitat_trasllat) in (select max(a) from (select sum(quantitat_trasllat) as a
+from trasllat t join desti d on t.cod_desti = d.cod_desti
+where to_char(t.data_arribada,'yyyy')='2016'
+group by d.cod_desti) as b);
+
+/*Quina són les tres empreses productores que generen més residus tòxics? Has de indicar la consulta amb nif empresa, nom empresa, toxicitat i quantitat. Mostra el resultat ordenat per la columna quantitat (de major a menor) seguit de la columna toxicitat.*/
+select e.nif_empresa, e.nom_empresa, r.toxicitat, r.quantitat_residu
+from residu r join empresaproductora e on r.nif_empresa = e.nif_empresa
+order by 4 desc, 3
+limit 3;
+
+/*Quines són les 5 empreses transportistes que més km han recorregut durant el segon trimestre de l'any 2016. */
+select sum(kms), e.nif_emptransportista, e.nom_emptransport
+from trasllat_empresatransport tet join empresatransportista e on tet.nif_emptransportista = e.nif_emptransportista
+where to_char(data_enviament, 'yyyy')='2016' and to_char(data_enviament,'q')='2'
+group by e.nif_emptransportista
+order by 1 desc
+limit 5;
+
+/*Indicar nom de destí, ciutat de destí, nom de la empresa productora i el tipus d'envàs que han fet servir les empreses productores que han traslladat la màxima quantitat fent servir un tractament del tipus "Inactivació, control i abocament".*/
+select d.nom_desti, d.ciutat_desti, e.nom_empresa, e.nif_empresa,t.envas, sum(quantitat_trasllat), tractament
+from trasllat t join desti d  on t.cod_desti=d.cod_desti
+  join empresaproductora e on t.nif_empresa = e.nif_empresa
+  join trasllat_empresatransport te on t.nif_empresa = te.nif_empresa
+where lower(tractament) like '%control i aboc%'
+group by d.nom_desti, d.ciutat_desti, e.nom_empresa, e.nif_empresa,t.envas,tractament
+  having sum(quantitat_trasllat) in (select max(a) from (select sum(quantitat_trasllat) as a
+from trasllat
+where lower(tractament) like '%control i aboc%'
+group by nif_empresa, tractament) as b);
+
+/*Quin tipus d'envàs s'ha fet servir més durant l'any 2016 (entenen que serà la data d'enviament, ja que el producte ja està envasant abans d'enviar-se). */
+
+select count(*), envas
+from trasllat
+where to_char(data_enviament,'yyyy')='2016'
+group by envas
+having count(*) in (select max(a) from (select count(*) as a
+from trasllat
+where to_char(data_enviament,'yyyy')='2016'
+group by envas)as b);
+
+/*Indicar per tipus de tractament la quantitat màxima de residus traslladats i la quantitat mínima. Has de mostrar la informació en tres columnes: max_quantiat,  min_quantitat, tractament.*/
+select max(v.quantitat_trasllat) as "max_quantitat", min(v2.quantitat_trasllat) as "min_quantitat", v.tractament as "tractament"
+from trasllat v, trasllat v2
+where v.nif_empresa=v2.nif_empresa
+group by v.tractament
+order by 3;
