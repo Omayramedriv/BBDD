@@ -1,0 +1,306 @@
+/* Exercici 1 
+Programar un bloc principal i un procediment per a consultar les dades de l’empleat. El codi de l’empleat s’introduirà per teclat.
+
+El bloc anònim preguntarà a l’usuari i cridarà al procediment passant al paràmetre     corresponent. El procediment consultarà la taula empleat i recuperarà les següents dades: nom, salari, comissió, ofici i cap.
+En cas de que la comissió sigui nul·la, ha d’aparèixer 0 i no en blanc.
+El procediment s’anomenarà imprimir_dades.
+A més, s’ha de controlar si existeix o no l’empleat a la base de dades.*/
+
+CREATE OR REPLACE PROCEDURE IMPRIMIR_DADES(CODI EMPLOYEES.EMPLOYEE_ID%TYPE)language plpgsql as $$
+declare
+  EMPNAME EMPLOYEES.FIRST_NAME%TYPE;
+  JOBTIT JOBS.JOB_TITLE%TYPE;
+  SALAR EMPLOYEES.SALARY%TYPE;
+  COM EMPLOYEES.COMMISSION_PCT%TYPE;
+  MAN EMPLOYEES.FIRST_NAME%TYPE;
+  MANID EMPLOYEES.MANAGER_ID%TYPE;
+BEGIN
+
+  SELECT  FIRST_NAME, JOB_TITLE, SALARY,COMMISSION_PCT, MANAGER_ID
+  INTO EMPNAME, JOBTIT, SALAR,COM, MANID
+  FROM EMPLOYEES JOIN JOBS USING (JOB_ID)
+  WHERE EMPLOYEE_ID=CODI;
+  raise notice 'FICHA PERSONAL DEL EMPLEADO: %',CODI;
+  raise notice 'NOMBRE: %', EMPNAME;
+  raise notice 'OFICIO: %', JOBTIT;
+  raise notice 'SALARIO: %', SALAR;
+  raise notice 'COMISSION: %', COM;
+  raise notice 'JEFE: %', MAN;
+  if not found then
+      raise exception 'ERROR: NO DATA FOUND';
+end if;
+ END;$$;
+
+do $$
+BEGIN
+   call imprimir_dades(:id_employee);
+END;$$ language  plpgsql;
+
+/* Exercici 2 - Programar el mateix exercici que l’anterior  però ara el subprograma serà una funció anomenarà retornar_dades. La funció no imprimirà cap dada, sinó que retornarà una variable de tipus registre.
+S’ha de controlar els possibles errors (com abans) però ara a la funció.*/
+
+CREATE OR REPLACE FUNCTION retorna_dades(eid employees.employee_id%TYPE) returns record language plpgsql as $$
+declare
+	employee employees%ROWTYPE;
+BEGIN
+	SELECT *
+	INTO strict employee
+	FROM employees
+	WHERE employee_id = eid;
+	RETURN employee;
+END;$$;
+
+
+CREATE OR REPLACE FUNCTION find_job_title(jid jobs.job_id%TYPE) RETURNs jobs.job_title%TYPE language plpgsql as $$
+declare
+	jtitle jobs.job_title%TYPE;
+BEGIN
+	SELECT job_title
+        INTO strict jtitle
+        FROM jobs
+        WHERE job_id = jid;
+	RETURN jtitle;
+END;$$;
+
+
+do $$
+DECLARE
+	eid employees.employee_id%TYPE := :id_employee;
+	employee employees%ROWTYPE;
+	BEGIN
+	employee := (select retorna_dades(eid));
+	raise notice 'FICHA PERSONAL DEL EMPLEADO %',  employee.employee_id;
+    raise notice 'Nombre: %',  employee.first_name;
+	raise notice 'Oficio: %', (select (find_job_title(employee.job_id)));
+        raise notice 'Salario: %', employee.salary;
+        IF employee.commission_pct IS NOT NULL THEN
+                raise notice 'Commisión: %', employee.commission_pct;
+        ELSE
+                raise notice 'Commisión: 0';
+        END IF;
+        IF employee.manager_id IS NOT NULL THEN
+                raise notice 'Jefe: %', employee.manager_id;
+        ELSE
+             raise notice 'Jefe: No tiene';
+        END IF;
+EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+                raise exception 'La id del empleado no existe.';
+        WHEN TOO_MANY_ROWS THEN
+                raise exception'Más de una fila.';
+        WHEN OTHERS THEN
+               raise exception 'ERROR: ';
+END;$$ language plpgsql;
+
+
+/* Exercici 3- 
+Realitzar un programa que ens indiqui si existeix o no el departament a la nostra base de dades. S’ha de tenir en compte els següents aspectes:
+el codi del departament ho introduirà l’usuari per teclat.
+per comprovar si existeix o no el departament, s’ha de programar una funció anomenada COMPROVAR_DEPT. A aquesta funció se li passarà per paràmetre des del bloc principal el codi del departament a comprovar.
+el missatge que s’ha de mostrar és el següent: “EXISTEIX DEPARTAMENT” o “NO EXISTEIX DEPARTAMENT”.*/
+
+CREATE OR REPLACE FUNCTION comprovar_dept(did departments.department_id%TYPE) RETURNs BOOLEAN language plpgsql as $$
+declare
+	v_dpt_id departments.department_id%TYPE;
+
+BEGIN
+	SELECT department_id
+	INTO strict v_dpt_id
+	FROM departments
+	WHERE department_id = did;
+	RETURN true;
+EXCEPTION
+	WHEN NO_DATA_FOUND THEN
+		RETURN false;
+	WHEN OTHERS THEN
+		raise exception'ERROR GENERAL:';
+END;$$;
+
+
+do $$
+DECLARE
+	did departments.department_id%TYPE := :dpt_id;
+BEGIN
+	IF comprovar_dept(did) THEN
+		raise notice 'EXISTEIX DEPARTAMENT';
+	ELSE
+		raise notice 'NO EXISTEIX DEPARTAMENT';
+	END IF;
+END;$$ language plpgsql;
+
+/* Exercici 4 - 
+Realitzar un programa que insereixi les dades d’un departament a la taula corresponent. Aquestes dades les ha d’introduir l’usuari per teclat. Abans d’inserir el departament, s’ha de comprovar si existeix o no el departament a la base de dades (per fer aquesta comprovació ens ajudarem de la funció que s’ha creat a l’exercici anterior, COMPROVAR_DEPT).*/
+
+CREATE OR REPLACE FUNCTION comprovar_mng(mid employees.employee_id%TYPE) RETURNs BOOLEAN
+language plpgsql as $$
+declare
+        v_mid employees.employee_id%TYPE;
+BEGIN
+        SELECT employee_id
+        INTO strict v_mid
+        FROM employees
+        WHERE employee_id = mid;
+        RETURN true;
+EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+                RETURN false;
+        WHEN OTHERS THEN
+                raise exception 'ERROR GENERAL:';
+END;$$;
+
+
+CREATE OR REPLACE FUNCTION comprovar_loc(lid locations.location_id%TYPE)
+RETURNs BOOLEAN language plpgsql as $$
+declare
+        v_lid locations.location_id%TYPE;
+BEGIN
+        SELECT location_id
+        INTO strict v_lid
+        FROM locations
+        WHERE location_id = lid;
+        RETURN true;
+EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+                RETURN false;
+        WHEN OTHERS THEN
+                raise exception 'ERROR GENERAL: ';
+END;$$;
+
+
+CREATE OR REPLACE PROCEDURE new_dept
+(did departments.department_id%TYPE, dname departments.department_name%TYPE, dmng departments.manager_id%TYPE, dloc departments.location_id%TYPE) language plpgsql AS $$
+
+BEGIN
+	INSERT INTO DEPARTMENTS
+	VALUES (did, dname, dmng, dloc);
+	COMMIT;
+END;$$;
+
+
+do $$
+DECLARE
+	did departments.department_id%TYPE := :dpt_id;
+	dname departments.department_name%TYPE := initcap(:dpt_name);
+	dmng departments.manager_id%TYPE := :dpt_mng_id;
+	dloc departments.location_id%TYPE := :dpt_loc_id;
+	counter integer := 0;
+BEGIN
+	IF (select comprovar_dept(did)) THEN
+		raise notice 'JA EXISTEIX EL DEPARTAMENT';
+	ELSE
+		counter= counter + 1;
+	END IF;
+	IF (select comprovar_mng(dmng)) THEN
+		counter = counter + 1;
+	ELSE
+		raise notice 'EL MANAGER INTRODUÏT NO EXISTEIX';
+	END IF;
+	IF (select comprovar_loc(dloc)) THEN
+		counter= counter + 1;
+	ELSE
+		raise notice'LA LOCALITZACIÓ INTRODUIDA NO EXISTEIX';
+	END IF;
+	IF counter=3 THEN
+		call new_dept(did, dname, dmng, dloc);
+	END IF;
+END;$$ language plpgsql;
+
+
+/*Exercici 5 - 
+Realitzar un programa  que modifiqui la taula DEPT on el codi del departament coincideixi amb el que s’introdueixi per teclat i desar els canvis. Controlar les excepcions corresponents, és a dir, si no existeix el departament o qualsevol altre error.*/
+
+CREATE OR REPLACE PROCEDURE upt_dept (did departments.department_id%TYPE, dname departments.department_name%TYPE, dmng departments.manager_id%TYPE, dloc departments.location_id%TYPE) language plpgsql
+AS $$
+BEGIN
+	update DEPARTMENTS
+	    set (department_id, department_name, manager_id, location_id) = (did, dname, dmng, dloc);
+	COMMIT;
+END;$$;
+
+
+
+do $$
+DECLARE
+	did departments.department_id%TYPE := :dpt_id;
+	dname departments.department_name%TYPE := :dpt_name;
+	dmng departments.manager_id%TYPE := :dpt_mng_id;
+	dloc departments.location_id%TYPE := :dpt_loc_id;
+	counter integer  := 0;
+BEGIN
+	IF comprovar_dept(did) THEN
+		counter = counter + 1;
+	ELSE
+		raise notice 'EL DEPARTAMENT INTRODUÏT NO EXISTEIX';
+	END IF;
+	IF comprovar_mng(dmng) THEN
+		counter = counter + 1;
+	ELSE
+		raise notice 'EL MANAGER INTRODUÏT NO EXISTEIX';
+	END IF;
+	IF comprovar_loc(dloc) THEN
+		counter = counter + 1;
+	ELSE
+		raise notice 'LA LOCALITZACIÓ INTRODUIDA NO EXISTEIX';
+	END IF;
+	IF counter = 3 THEN
+		call upt_dept (did, INITCAP(dname), dmng, dloc);
+	END IF;
+END;$$ language plpgsql;
+
+/* Exercici 6 -
+Realitzar un programa  que pregunti a l’usuari el codi de l’empleat per tal de retornar el nom de l’empleat. El nom de l’empleat ho retornarà una funció que es crearà anomenada NOM. A aquesta funció se li passarà per paràmetre el codi de l’empleat que l’usuari ha introduït per teclat. A més, s’ha de controlar els errors al bloc anònim.*/
+
+CREATE OR REPLACE FUNCTION nom(eid employees.employee_id%TYPE) RETURNs  employees.first_name%TYPE language plpgsql as $$
+declare
+	ename employees.first_name%TYPE;
+BEGIN
+	SELECT first_name
+	INTO strict ename
+	FROM employees
+	WHERE employee_id = eid;
+	RETURN ename;
+END;$$;
+
+
+do $$
+DECLARE
+	eid employees.employee_id%TYPE := :v_emp_id;
+BEGIN
+	select nom(eid);
+EXCEPTION
+	WHEN NO_DATA_FOUND THEN
+		raise  notice  'l´empleat no existeix';
+	WHEN OTHERS THEN
+		raise notice 'ERROR: ';
+END; $$ language plpgsql;
+
+/* Exercici 7 -
+Realitzar un programa  que ens comprovi si un departament existeix o no a la taula corresponent, consultant pel codi del departament. En cas d’existir el departament s’ha d’imprimir per pantalla i s’ha de comprovar si comença o no per la lletra A. Si comença per la lletra A, després d’imprimir el nom del departament, ha de dir, COMENÇA PER LA LLETRA A.
+S’ha de programar les següents excepcions:
+· Si no hi ha dades, s’ha de retornar: “ERROR: no dades”.
+· Si retorna més d’una fila: “ERROR: retorna més files”
+· Qualsevol altre error: “ERROR (sense definir)”.*/
+
+do $$
+DECLARE
+	did departments.department_id%TYPE := :dpt_id;
+	dname departments.department_name%TYPE;
+	BEGIN
+	SELECT department_name
+	INTO strict dname
+	FROM departments
+	WHERE did = department_id;
+	raise notice '%',dname;
+	IF UPPER(SUBSTR(dname,1,1)) = 'A' THEN
+		raise notice 'COMENÇA PER LA LLETRA A';
+	ELSE
+		RAISE notice 'No comença per la lletra A' ;
+	END IF;
+EXCEPTION
+	WHEN NO_DATA_FOUND THEN
+		raise exception 'ERROR: no dades';
+	WHEN TOO_MANY_ROWS THEN
+		raise exception 'ERROR: retorna més files';
+	WHEN OTHERS THEN
+		raise exception 'ERROR (sense definir)';
+END; $$ language plpgsql;
