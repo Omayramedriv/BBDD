@@ -1,0 +1,159 @@
+/*1.	Obtenir el nom i el nif de totes les empreses transportistes que han realitzar un trasllat seledes d'empreses ubicades a Granada. La consulta ha d'estar ordenada per el nom de l'empresa.*/
+
+SELECT nif_emptransportista, NOM_EMPTRANSPORT
+  FROM EMPRESATRANSPORTISTA
+  WHERE nif_emptransportista IN
+     (SELECT DISTINCT trasllat_empresatransport.nif_emptransportista
+        FROM TRASLLAT_EMPRESATRANSPORT
+        WHERE nif_empresa IN
+           (SELECT nif_empresa
+              FROM EMPRESAPRODUCTORA
+              WHERE lower(CIUTAT_EMPRESA) = 'granada' ))
+  ORDER BY NOM_EMPTRANSPORT;
+
+select distinct  et.nif_emptransportista, et.nom_emptransport
+from empresatransportista et, trasllat_empresatransport tet, empresaproductora ep
+where ep.nif_empresa=tet.nif_empresa and tet.nif_emptransportista=et.nif_emptransportista
+and lower(ciutat_empresa) like 'granad%';
+
+
+/*2.	Obtenir l'import de tots els trasllats que ha realitzar l'empresa amb NIF 'A-22300282' a l'empresa productora A-12000466 amb destí 15. La columna que mostra el cost total s'esmentarà "Import de trasllats".*/
+SELECT sum(cost) "Import de trasllats"
+  FROM TRASLLAT_EMPRESATRANSPORT
+  WHERE nif_empresa = 'A-12000466' AND nif_emptransportista =
+        'A-22300282' AND cod_desti = '22';
+
+/*3.	Obtenir el nom de totes les ciutats a les que van a parar els residus que inclouen el constituent Biocides i Substàncies Fitofarmaceutiques. Mostra els resultats ordenats.*/
+  select nom_desti,nom_constituent from desti where cod_desti in (
+  select cod_desti from trasllat where cod_residu = (
+  select distinct cod_residu from residu_constituent
+where cod_constituent = (
+  select cod_constituent from constituent
+  where lower(nom_constituent) like 'biocides i %')));
+
+select distinct ciutat_desti, c.nom_constituent
+from desti d, trasllat t, residu_constituent rc, constituent c
+where c.cod_constituent=rc.cod_constituent
+and rc.cod_residu=t.cod_residu
+and d.cod_desti=t.cod_desti
+and lower(nom_constituent) like 'biocides i %';
+
+
+
+SELECT DISTINCT ciutat_desti "Ciudad de destino"
+	  FROM Desti
+	  WHERE cod_desti IN
+		(SELECT DISTINCT cod_desti
+		  FROM Trasllat
+		  WHERE (nif_empresa, cod_residu) IN
+		   (SELECT DISTINCT nif_empresa, cod_residu
+			 FROM Residu_constituent R_C, constituent C
+			 WHERE lower(c.nom_constituent) = 'biocides i substàncies fitofarmaceutiques' AND
+			 c.cod_constituent=R_C.cod_constituent))
+	  ORDER BY ciutat_desti;
+
+/*4.	Obtenir l'empresa transportista de Granada que hagi participat en un trasllat a Barcelona amb el cost més baix.*/
+
+SELECT TET.nif_emptransportista "Empresa_Transportista",
+       TET.cost "Importe"
+   FROM trasllat_empresatransport TET, desti D,
+        EmpresaTransportista ET
+   WHERE D.cod_desti = TET.cod_desti AND
+         tet.nif_emptransportista = et.nif_emptransportista and
+         upper(d.ciutat_desti) = 'BARCELONA' and
+         UPPER(ET.ciutat_emptransport) = 'GRANADA' AND TET.cost=
+     (SELECT MIN(TET.cost)
+       FROM trasllat_empresatransport TET, desti D,
+            EmpresaTransportista ET
+       WHERE D.cod_desti = TET.cod_desti AND
+             tet.nif_emptransportista = et.nif_emptransportista and
+             upper(d.ciutat_desti) = 'BARCELONA' and
+             upper(et.ciutat_emptransport) = 'GRANADA');
+
+
+select et.nom_emptransport, et.nif_emptransportista, tet.cost, d.ciutat_desti
+from empresatransportista et, trasllat_empresatransport tet, desti d
+where d.cod_desti=tet.cod_desti and tet.nif_emptransportista=et.nif_emptransportista
+/*and lower(d.ciutat_desti) like 'barc%' */and lower(et.ciutat_emptransport) like 'grana%;'
+
+
+
+
+select min(cost) from trasllat_empresatransport 
+where nif_emptransport in (
+select nif_emptransport from empresatransportista
+where lower (ciutat_emptransport)='granada' and nif_emptransport in (
+select distinct nif_emptransport
+from trasllat_empresatransport where cod_desti = (
+select cod_desti from desti where lower(ciutat_desti)='barcelona')));
+
+
+/*5.	Obtenir el nom de totes les empreses transportistes que ha realitzat un trasllat des d'una empresa ubicada a Madrid.Ordena els resultats per el nom de l'empresa*/
+select nif_emptransportista, nom_emptransport
+from empresatransportista
+where nif_emptransportista in (select distinct trasllat_empresatransport.nif_emptransportista
+                            from trasllat_empresatransport
+                              where nif_empresa in (select nif_empresa
+                                                      from empresaproductora
+                                                        where lower(ciutat_empresa)='madrid'))
+order by nom_emptransport;
+
+select distinct et.nom_emptransport
+from empresaproductora ep, empresatransportista et,
+trasllat_empresatransport tet
+where ep.nif_empresa=tet.nif_empresa and tet.nif_emptransportista=et.nif_emptransportista
+and lower(ep.ciutat_empresa)='madrid'
+order by 1;
+
+/*6	Obtenir el nom i el CIF de la empresa que més residus ha generat amb el nivell de toxicitat més alt.*/
+
+select e.nif_empresa,e.nom_empresa, r.toxicitat, r.quantitat_residu
+from empresaproductora e,residu r
+where e.nif_empresa = r.nif_empresa and toxicitat = (select max(toxicitat)
+                                                      from residu)
+and quantitat_residu = (select max(quantitat_residu) from residu  where toxicitat = (select max(toxicitat)
+                                                                                                             from residu));
+
+select e.nif_empresa, e.nom_empresa, r.toxicitat, r.quantitat_residu
+from empresaproductora e, residu r
+where  e.nif_empresa=r.nif_empresa
+and r.toxicitat  = (select max(toxicitat) from residu) and r.quantitat_residu = (
+select max(quantitat_residu)
+from residu where toxicitat = (select max(toxicitat)
+from residu));
+
+/*7.	Obtenir el nom de les empreses i el seu NIF, d'aquelles empreses que generen residus amb el constituent amb codi que comencin per 992 . Mostra el resultats ordenats per el nom de l'empresa.*/
+
+SELECT nif_empresa, nom_empresa
+  FROM EmpresaProductora
+  WHERE nif_empresa IN
+    (SELECT DISTINCT NIF_EMPRESA
+       FROM RESIDU_CONSTITUENT
+       WHERE (COD_CONSTitUENT)::text like '992%' )
+  ORDER BY NOM_EMPRESA;
+
+/*8.	Obtenir els nom del destí, el nom de la ciutat i el tipus de transport de tots els trasllats que ha realitzat l'empresa transportista 'A-22300325' d'una distància superior als 4297 kms.*/
+
+SELECT distinct nom_desti "Destí", ciutat_desti "Ciutat de destí", tipus_transport
+  FROM Desti d, trasllat_empresatransport t
+  WHERE d.cod_desti IN
+     (SELECT DISTINCT cod_desti
+        FROM  TRASLLAT_EMPRESATRANSPORT
+        WHERE nif_emptransportista = 'A-22300325' AND kms > 4297) and d.cod_desti=t.cod_desti;
+
+/*9.	Obtenir l'empresa transportista i la ciutat on està ubicada aquesta empresa, de l'empresa que hagi participat en un trasllat a Barcelona amb el cost més baix.*/
+							   
+SELECT TET.nif_emptransportista "Empresa_Transportista",
+       TET.cost "Importe", ET.ciutat_emptransport, et.nom_emptransport
+   FROM trasllat_empresatransport TET, desti D,
+        EmpresaTransportista ET
+   WHERE D.cod_desti = TET.cod_desti AND
+         tet.nif_emptransportista = et.nif_emptransportista and
+         upper(d.ciutat_desti) = 'BARCELONA' AND TET.cost=
+     (SELECT MIN(TET.cost)
+       FROM trasllat_empresatransport TET, desti D,
+            EmpresaTransportista ET
+       WHERE D.cod_desti = TET.cod_desti AND
+             tet.nif_emptransportista = et.nif_emptransportista and
+             upper(d.ciutat_desti) = 'BARCELONA');
+
