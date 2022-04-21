@@ -1,0 +1,375 @@
+/*1)Crea un bloc anònim amb variables no PL/SQL que mostri el nom del departament al que pertany l'empleada Pat Fay.*/
+
+do$$ 
+declare
+ nom_dept departments.department_name%type;
+ begin
+	select d.department_name
+	into nom_dept
+	from departments d, employees e
+	where e.first_name='Pat' and e.last_name='Fay' and d.department_id=e.department_id;
+	raise notice 'El nom del departament és %', nom_dept;
+end;
+$$ language plpgsql;
+--Alter solució --
+
+create function nom_dept ()
+returns departments.department_name%type as $$
+declare
+ nom_dept departments.department_name%type;
+ begin
+	select d.department_name
+	into nom_dept
+	from departments d, employees e
+	where e.first_name='Pat' and e.last_name='Fay' and d.department_id=e.department_id;
+	return nom_dept;
+end;
+$$ language plpgsql;
+
+
+/*Crea un procediment que introduirem l’id de l’empleat, i que retorni a quina regió pertany. 
+ */
+
+do$$ 
+declare
+  id_empl employees.employee_id%type;
+  nom_regio regions.region_name%type;
+
+begin
+	select region_name
+	into nom_regio
+	from employees e, departments d, locations l, countries c, regions r
+	where e.department_id=d.department_id and l.location_id=d.location_id and c.country_id=l.country_id and  c.region_id=r.region_id
+	and e.employee_id=:id_empl;
+	raise notice 'El usuari amb id % , pertany a la regió % ', :id_empl, nom_regio;
+end;
+$$ language plpgsql;
+
+----------Altre solució---------------
+create function empl_country (id_emp employees.employee_id%type)
+returns regions.region_name%type as $$
+declare
+    nom_regio regions.region_name%type;
+
+begin
+	select region_name
+	into nom_regio
+	from employees e, departments d, locations l, countries c, regions r
+	where e.department_id=d.department_id and l.location_id=d.location_id and c.country_id=l.country_id and  c.region_id=r.region_id
+	and e.employee_id=id_emp;
+	return nom_regio;
+	end;
+$$ language plpgsql;
+
+
+
+/*3)Crea un programa que ha de mostrar  per pantalla :       
+HOLA MUNDO*/
+
+do $$
+begin
+    raise notice 'Hola Mundo';
+end;
+    $$ language plpgsql;
+
+/*4) Crea un bloc anònim amb dos variables de tipus NUMBER. Aquestes variables s’ha de tenir un valor inicial de 10.2 i 20.1 respectivament. El bloc ha de sumar aquestes dues variables i mostrar per pantalla ‘LA SUMA TOTAL ÉS: 30.3’ */
+
+do $$
+declare
+  num1 numeric (3,1):=10.2;
+  num2 numeric (3,1)=20.1;
+  result numeric (4,2);
+begin
+	result= num1+num2;
+	raise notice 'El resultat de sumar % i % es %', num1, num2, result;
+end;
+$$ language plpgsql;
+
+
+
+/*5)Crea un bloc anònim que ha de llistar tots el noms (FIRST_NAME) dels empleats de la taula (EMPLOYEES) en majúscules , on has de declara una variable de tipus first_name. */
+
+do $$
+DECLARE
+ cognom EMPLOYEES.FIRST_NAME%TYPE;
+BEGIN
+	SELECT first_name
+	into cognom
+	from employees;
+  raise notice 'La llista de cognoms és %', upper(cognom);
+end;
+$$ language plpgsql;
+
+
+--Et mostra només un valor de la llista. Per poder realitzar l'exercici s'ha de fer servir un registre o bé un cursor.
+
+/*6)Crea un programa que contingui una variable constant anomenada Percentatge amb  un  valor  de  10  Aquest  valor  és  un  10%  .    Aquest  bloc  ha  de  contenir  una variable de tipus rowtype, de la taula employees. Dins aquest bloc, augmentaràs el sou a l’empleat que introdueixi un usuari i mostrarà per pantalla el següent:  “ S’ha realitzat un augment de sou a: L’usuari amb id: “id_usuari” L’usuari amb Nom: “first_name” i cognom “last_name” que pertany al departament  “id_department”” */
+
+do $$
+DECLARE
+	PERCENTATGE CONSTANT numeric(2):=10;
+	VAR_EMPL EMPLOYEES%ROWTYPE;
+	var_dept departments%rowtype;
+	empl_id employees.employee_id%type;
+
+BEGIN
+	select e.employee_id, e.first_name, e.last_name, d.department_name, e.salary
+	into var_empl.employee_id, var_empl.first_name, var_empl.last_name,var_dept.department_name, var_empl.salary
+    from employees e, departments d
+	Where D.Department_Id=E.Employee_Id And E.Employee_Id=:empl_Id;
+	raise notice 'L usuari amb id: %, s anomena: % i el seu cognom és: %. Aquest empleat pertany al department: % i el seu salary és: %, amb l augment del 10 és: %.',
+	    var_empl.employee_id, var_empl.first_name, var_empl.last_name,Var_Dept.Department_Name, Var_Empl.Salary,round((((Var_Empl.Salary*Percentatge)/100)+Var_Empl.Salary),2);
+end;
+$$ language plpgsql;
+
+/*7) Realitza un programa que introduirem el nom, cognom i edat d’una persona. Posteriorment s’ha d’imprimir les dades corresponents a la persona.  */
+
+do $$
+
+DECLARE
+	nom varchar(100):=':v_nom';
+	cognom varchar(100):=':v_cognom';
+	edat number:=:v_edat;
+
+BEGIN
+	raise notice 'El nom introduit per pantalla és: % '||nom||'. El seu cognom:% '||cognom||'. I la seva edat:% '||edat;
+END;
+$$ language plpgsql;
+
+
+/*8) Realitza un programa que calculi el 18% d’un preu que introdueix. S’ha de mostrar l’augment d’aquest preu. */
+
+do $$
+declare
+ preu numeric (5,2);
+
+BEGIN
+ raise notice 'El presu és el següent %', ROUND((:PREU*1.18),2);
+END;
+$$ language plpgsql;
+
+
+
+/*9) Realitza un programa que calculi el 18% d’un preu que introdueix. S’ha de mostrar l’augment d’aquest preu arrodonit..*/
+
+do $$
+DECLARE
+	var_preu numeric (5,2);
+    PREU numeric (6,2);
+BEGIN
+    preu=:VAR_PREU*1.18;
+    raise notice 'El total del preu més el 18 del preu introduit és: %', ROUND (PREU);
+END;
+$$ language plpgsql;
+
+
+/*10) Realitzar un programa que introduirem un salari i la comissió que guanya. I si salari:
+a) és menor que 100 ? la comissió serà el salari aplicant un 10%
+b) està entre 100 i 500 ? la comissió serà el salari aplicant un 15%.
+c) és major que 1000 ? la comissió serà el salari aplicant un 20%.
+Al  final mostrar el resultat.  */
+
+do $$
+
+DECLARE
+	VAR_SALARY integer;
+	var_comisio integer;
+BEGIN
+ IF :var_salary<0 THEN
+  raise notice 'ERROR: El salari no pot ser negatiu!';
+ ELSE
+  IF :var_salary<100 THEN
+     var_comisio=:var_salary*1.1;
+  ELSIF var_salary BETWEEN 100 AND 500 THEN
+     VAR_COMISIO=:VAR_SALARY*1.15;
+  ELSIF var_salary >500 THEN
+     var_comisio=:var_salary*1.2;
+  END IF;
+  raise notice 'El salari és % i la comissió final és de %.', :var_salary, var_comisio;
+  END IF;
+end;
+$$ language  plpgsql;
+
+/*11) Preguntar a l’usuari la seva edat i donar el missatge corresponent, si:
+
+a) Menor de 18 ? ets menor de edat!
+b) = 18 ? casi ets major de edat!
+c) >18 ?ja ets major de edat!
+d) >40 ? ja ets més major …
+e) Si és negatiu => error edat no pot ser negativa.*/
+
+do $$
+declare
+
+var_edat integer;
+edat integer:=:var_edat;
+
+begin
+if edat between 0 and 17 then
+  raise notice 'Ets menor d edat!';
+ELSIF edat between 18 and 40 then
+  raise notice 'Ja ets major d edat!';
+ELSIF edat > 40 then
+  raise notice 'Ets viejoven!';
+ELSIF edat <0 then
+  raise notice 'Error ! L´edat no pot ser negativa';
+end if;
+end;
+
+ $$ language plpgsql;
+-- Altre solució
+do $$
+
+begin
+if :VAR_EDAT between 0 and 17 then
+  raise notice 'Ets menor d edat!';
+ELSIF :VAR_EDAT between 18 and 40 then
+  raise notice 'Ja ets major d edat!';
+ELSIF :VAR_EDAT > 40 then
+  raise notice 'Ets viejoven!';
+ELSIF :VAR_EDAT <0 then
+  raise notice 'Error ! L´edat no pot ser negativa';
+end if;
+end;
+
+    $$ language plpgsql;
+
+/*12 )Realitzar un programa que demani un número i el programa ha de realitzar les següents operacions amb aquest número. Les operacions han de ser independents i són:
+
+a)	sumar-li 4.
+b)	Restar-li 3.
+c)	Multiplicar-li 8.
+S’ha de tenir en compte que per a programar aquest exercici:
+**	utilitzar una constant i assignar-li el número introduït per teclat.
+**	fer ús d’una variable per a cada operació
+**	imprimir per pantalla els resultats corresponents a cada operació, posant el literal al davant de Suma, Resta i Multiplicació respectivament*/
+
+DO $$
+DECLARE
+    v_menu NUMERIC;
+    resultat NUMERIC;
+    v_num1 NUMERIC;
+    v_num2 NUMERIC;
+BEGIN
+    IF :v_menu=1 THEN
+     resultat=(:v_num1+:v_num2);
+     RAISE NOTICE 'Ha triat l´operació SUMAR: % + % = %', :v_num1, :v_num2, Resultat;
+    ELSIF :v_menu=2 THEN
+     resultat=:v_num1-:v_num2;
+     RAISE NOTICE 'Ha triat l´operació RESTAR: % - % = %', :v_num1, :v_num2, Resultat;
+    ELSIF :v_menu=3 THEN
+     resultat=:v_num1*:v_num2;
+    RAISE NOTICE 'Ha triat l´operació MULTIPLICAR: % * % = %', :v_num1, :v_num2, Resultat;
+    ELSIF :v_menu=4 THEN
+     IF :v_num2=0 THEN
+        RAISE NOTICE '  x ERROR..!! NO ES POT DIVIDIR CAP NÚMERO PER 0';
+     ELSE
+        resultat=:v_num1/:v_num2;
+        RAISE NOTICE 'Ha triat l´operació DIVIDIR % / % = %:', :v_num1, :v_num2, Resultat;
+     END IF;
+    ELSE
+      RAISE NOTICE '  x ERROR NO EXISTEIX CAP OPCIÓ..!!';
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+/*13) Realitzar un programa que introduirem un valor de dos números. Aquest dos números se li assigna dos variables (en el moment de la declaració). Els dos números han de ser positius, en cas contrari s’ha de donar a l’usuari el missatge corresponent. S’ha de realitzar una operació amb aquest números: dividir entre ells i sumar-li el segon.*/
+
+DO $$
+
+declare
+	var1 INTEGER;
+    var2 INTEGER;
+    RESULTAT INTEGER;
+
+begin
+	IF :var1 <0 or :var2<0 THEN
+        RAISE NOTICE 'El número no pot ser negatiu!';
+     ELSE
+		resultat=(:var1/:var2)+:var2;
+    RAISE NOTICE 'El resultat és: % ', resultat;
+	 END IF;
+end;
+$$ language plpgsql;
+
+/*14) Realitzar el programa de l’exercici 13, però ara també s’ha de controlar que el número primer sigui més gran que el segon. En cas contrari ha de donar el següent missatge: Error! el primer número ha de ser més gran que el segon.*/
+
+DO $$
+
+declare
+	var1 INTEGER;
+    var2 INTEGER;
+    RESULTAT INTEGER;
+
+begin
+	IF :var1 <0 or :var2<0 THEN
+        RAISE NOTICE 'El número no pot ser negatiu!';
+    elsif :var2>:var1 then
+	    RAISE NOTICE 'El primer número ha de ser mes gran que el segón'
+     ELSE
+		resultat=(:var1/:var2)+:var2;
+    RAISE NOTICE 'El resultat és: % ', resultat;
+	 END IF;
+end;
+$$ language plpgsql;
+
+/*15) Realitzar un programa que ens mostri els números entre un rang. El rang mínim és 1 i el màxim se li ha de preguntar a l’usuari.
+a)	Programar el bloc utilitzant l’estructura FOR.
+b)	Programar el bloc utilitzant l’estructura WHILE.*/
+
+-- programa estructura FOR
+do $$
+declare
+    num2 integer;
+begin
+	for i in 1..:num2 loop
+		raise notice 'El valor de i és: %', i;
+	end loop;
+end;
+$$ language plpgsql;
+
+-- programa estructura WHILE
+do $$
+
+declare
+	num1 integer:=1;
+    num2 integer;
+begin
+	if :num2<=0 then
+		raise notice 'El número introduit ha de ser major de 0';
+	else
+	while num1<=:num2 loop
+		raise notice 'El valor de i és: %', num1;
+		num1=num1+1;
+	end loop;
+	end if;
+end;
+$$ language  plpgsql;
+
+/*16)Realitzar un programa que ens mostri els números entre un rang amb un salt. Tant el rang mínim, com el màxim i el salt se li ha de preguntar a l’usuari. A més, s’ha de tenir en compte que el rang mínim sempre ha de ser més petit que el rang màxim i que el salt no ha de ser negatiu. En cas contrari s’ha de donar el missatge corresponent i acabar el programa.*/
+
+do $$
+DECLARE
+ RANGMIN integer;
+ VAR_RANGMAX integer;
+ var_rangmin integer:=:rangmin;
+ VAR_SALT integer;
+ i integer := 1;
+BEGIN
+  --COMPROVAR QUE EL SALT NO SIGUI NEGATIU
+  IF :VAR_SALT < 1 THEN
+    raise notice 'Error, ola k ase?!, has posat una xifra negativa';
+  ELSIF VAR_RANGMIN > :VAR_RANGMAX THEN
+    raise notice 'Error, però k fas!!! el Rang m?íim ha de ser més petit que el màxim';
+  ELSE
+  LOOP --INICI DO
+    raise notice 'Volta número: % amb el número: %', i, VAR_RANGMIN;
+    i =i+1;
+    VAR_RANGMIN = VAR_RANGMIN + :VAR_SALT;
+    IF VAR_RANGMIN > :VAR_RANGMAX THEN
+      EXIT;
+    END IF;
+  END LOOP;
+  END IF;
+END;
+$$ language plpgsql;
