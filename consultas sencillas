@@ -1,0 +1,75 @@
+/*Mostra el NIF i data d’enviament d’aquelles empreses que el cost d’un transport
+  ha estat entre 35000 i 36500€*/
+
+select nif_emptransportista, data_enviament from trasllat_empresatransport
+where cost between '35000' and '36500';
+
+select nif_emptransportista, data_enviament from trasllat_empresatransport
+where cost>='35000' and cost <='36500';
+
+/*Mostra el NIF de l’empresa i el seu codi de destí, d’aquelles empreses que van realitzar algun
+  trasllat durant el primer trimestre de 2017.*/
+
+select nif_emptransportista, cod_desti, data_enviament from trasllat_empresatransport
+    where data_enviament between '01/01/2017' and '31/03/2017' order by 3;
+
+select nif_emptransportista, cod_desti, data_enviament from trasllat_empresatransport
+    where to_char(data_enviament,'q')='1' and to_char(data_enviament,'yyyy')='2017' order by 3;
+
+/*Quins tractaments es poden dur a terme als diferents residus?*/
+select count(*) from trasllat;
+select distinct  tractament from trasllat;
+
+/*Quines són les diferents ciutats on estan ubicades les empreses transportistes?*/
+select distinct ciutat_emptransport from empresatransportista
+where empresatransportista.ciutat_emptransport not like '' order by 1;
+
+update empresatransportista set ciutat_emptransport= 'MADRID'
+where ciutat_emptransport ='MADIRD';
+
+/*Indica el NIF de l’empresa, el codi de residu i el tractament d’aquelles empreses que
+  han fet servir  un tipus d’envàs que comença per ‘b’.*/
+
+  select nif_empresa, cod_residu, tractament, envas
+         from trasllat where envas like'b%' or envas like('B%');
+
+select nif_empresa, cod_residu, tractament, envas
+         from trasllat where lower(envas) like'b%';
+
+/*Indica el tipus de transport i nom de l’empresa transportista que generen un residu amb
+  codi de destí 6, 7 i 8. */
+
+  select tipus_transport, nom_emptransport
+         from empresatransportista et
+         inner join trasllat_empresatransport tet on et.nif_emptransportista = tet.nif_emptransportista
+         where cod_desti in ('6','7','8');
+
+select tipus_transport, nom_emptransport, cod_desti
+         from empresatransportista et,trasllat_empresatransport tet
+         where et.nif_emptransportista=tet.nif_emptransportista and cod_desti in ('6','7','8');
+
+/*Mostra aquelles empreses productores (NIF_EMPRESA i NOM_EMPRESA) que tenen com a segon caràcter al seu nom una ‘a’
+  o que acaben en ‘s’ (exemple Tallers pepitu, SAS) i estan ubicades a Málaga, Sevilla o Córdoba.
+  Mostra els resultats ordenats per NOM_EMPRESA de manera descendent (Z a A).*/
+
+ select nif_empresa, nom_empresa
+        from empresaproductora
+            where upper(nom_empresa) like '_A%' or nom_empresa like '%s' and lower(ciutat_empresa) in ('málaga','sevilla','córdoba')
+            order by 2 desc;
+
+/*Mostra el NIF_EMPRESA i la Quantitat_Trasllat de les empreses que han fet servir un tipus de tractament
+  de “Segregació i lliurament” i que la   seva data d’enviament s’ha produït durant el primer trimestre de 2016. */
+
+  select nif_empresa, quantitat_trasllat, tractament, data_enviament
+      from trasllat where tractament like '%egregació%' and to_char(data_enviament,'yyyy')='2016'
+                      and to_char(data_enviament,'q')='1';
+
+--data_enviament >='01/01/2016' and data_enviament <='31/03/2016';
+--data_enviament between '01/01/2016' and '31/03/2016';
+
+/*Volem calcular el cost dels trasllat que s’han realitzat en tren i amb codi de destí 12, 13 i 14.
+  Ens indiquen que el càlcul del cost
+  total és el resultat del multiplicar el cost*km i que hem de mostrar la informació en una columna que es dirà “Cost Total”. */
+
+  select (cost*kms) as "cost_total", tipus_transport
+from trasllat_empresatransport where lower(tipus_transport)='train' and cod_desti in ('12','13','14');
