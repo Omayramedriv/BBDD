@@ -1,0 +1,419 @@
+/*Exercici 1 - Realitza un programa que ens mostri els números entre un rang. El rang mínim és 1 i el màxim se l’ha de preguntar a l’usuari.
+Realitzar el programa utilitzant l’estructura FOR o l’estructura WHILE. Per realitzar aquest exercici has de fer servir un procediment, de tal manera que mostri els números entre un rang en aquest procediment.
+Ajuda: 
+S’ha de programar dins del programa un procediment que donat el rang mínim a 1 i el màxim que se li passa com a paràmetre al procediment, imprimeixi per pantalla els números que hi ha entre el rang mínim i el màxim. El procediment rebrà el nom de RANG. 
+A més, al mateix exercici s’ha de programar un bloc principal, que ha de contenir els següents aspectes:
+preguntar a l’usuari pel rang màxim.
+comprovar que el rang màxim no és negatiu. Si és negatiu donar el missatge corresponent i acabar el programa. 
+Cridar al procediment RANG, passant com a paràmetre el rang màxim introduït per teclat.*/
+
+-- Exercici 1 (FOR):
+Create Or Replace Procedure Rang_Min_Max (maxim numeric) language plpgsql as $$
+Begin
+  If Maxim <=0 Then
+    raise notice 'El rang no pot començar per un nombre negatiu!';
+  Else
+    For Minim In 1..Maxim Loop
+     raise notice 'El valor actual del rang és  % I el valor màxim del rang que és %', MINIM, MAXIM;
+    End Loop;
+ end if;
+End;$$;
+
+do $$
+Begin
+  CALL Rang_Min_Max(:num_Rang);
+End;$$ language plpgsql;
+
+
+
+-- Exercici 1 (WHILE):
+Create Or Replace Procedure Rang_Min_Max_While (Maxim numeric) language plpgsql as $$
+declare
+ minim numeric:=1;
+Begin
+  If Maxim <=0 Then
+    raise notice 'El rang ha de començar per un nombre major de zero!';
+  Else 
+  WHILE minim<=maxim LOOP
+      raise notice 'El valor actual del rang és % del valor màxim del rang que és ', minim, maxim;
+      minim:=minim+1;
+    End Loop;
+end if;
+End;$$;
+
+do $$
+Begin
+  Rang_Min_Max_while(:num_Rang);
+End;$$ language plpgsql;
+
+
+-- Exercici 1 (LOOP):
+--PROCEDIMENT
+
+
+CREATE OR REPLACE PROCEDURE RANG (VAR_RANGMAX numeric) language plpgsql as $$
+declare
+ VAR_RANGMIN numeric := 1;
+ i numeric := 1;
+BEGIN
+  LOOP
+    raise notice 'Volta número: % amb el número: $', i, var_rangmin;
+    i :=i+1;
+    VAR_RANGMIN := VAR_RANGMIN + 1;
+    IF VAR_RANGMIN > VAR_RANGMAX THEN
+      EXIT;
+    END IF;
+  END LOOP;
+END;$$;
+
+do $$
+DECLARE 
+ VAR_RANGMAX numeric := :RANG_MAX;
+ VAR_RANGMIN numeric := 1;
+BEGIN
+ IF VAR_RANGMIN > VAR_RANGMAX THEN
+    raise notice 'Error! El rang mínim ha de ser més petit que el rang màxi');
+ ELSE   
+  RANG(VAR_RANGMAX);
+ END IF;$$ language plpgsql;
+
+
+/*Exercici 2 - Realitzar un programa que contingui una funció que dupliqui la quantitat rebuda com a paràmetre. La funció rebrà el nom de DUPLICAR_QUANTITAT. Al mateix programa s’ha de programa un bloc principal que demani per teclat la quantitat i que cridi a la funció que s’acaba de programar, passant el paràmetre corresponent.*/
+
+CREATE OR REPLACE FUNCTION DUPLICAR_QUANTITAT (N numeric)
+RETURNs numeric as $$
+declare
+  RESUL numeric;
+BEGIN
+  RESUL:=N*2;
+  RETURN(RESUL);
+END; $$ language plpgsql;
+
+do $$
+DECLARE
+  NUMEROVAR numeric:=:NUMERO;
+BEGIN
+  NUMEROVAR:=select DUPLICAR_QUANTITAT(NUMEROVAR);
+  raise notice 'EL NUMERO %  DUPLICAT= %', :numero,NUMEROVAR;
+END; $$ language plpgsql;
+
+
+
+/* Exercici 3 - Realitzar un programa que contengui una funció que calculi el factorial d’un número que es passa com a paràmetre. La funció rebrà el nom de FACTORIAL. Al mateix programa s’ha de programar un bloc principal que pregunti a l’usuari pel número a calcular i cridi a la funció FACTORIAL, passant el paràmetre corresponent.*/
+-- Exercici 3 (amb FOR):
+CREATE OR REPLACE FUNCTION  FACTORIAL(fac numeric) RETURNS numeric as $$ 
+declare
+ res numeric :=1; 
+BEGIN 
+ FOR i IN 1..fac LOOP  
+  res := i*res; 
+ END LOOP; 
+ RETURN (res);  
+END;$$ LANGUAGE plpgsql; 
+
+do $$
+DECLARE 
+ varfac numeric := :fac; 
+BEGIN 
+ IF varfac < 0 THEN 
+  raise notice 'El nombre no pot ser negatiu!';  
+ ELSE 
+  raise notice 'El factorial del nombre que has introduit és  %' select FACTORIAL(varfac);     
+ END IF; 
+END;$$ LANGUAGE plpgsql; 
+
+
+-- Exercici 3 (amb While incrementant):
+CREATE OR REPLACE FUNCTION  FACTORIAL(fac numeric) RETURNS numeric as $$
+declare
+ res numeric :=1;
+BEGIN
+ FOR i IN 1..fac LOOP
+  res := i*res;
+ END LOOP;
+ RETURN (res);
+END;$$ LANGUAGE plpgsql;
+
+do $$
+DECLARE
+ varfac numeric := :fac;
+BEGIN
+ IF varfac < 0 THEN
+  raise notice 'El nombre no pot ser negatiu!';
+ ELSE
+  raise notice 'El factorial del nombre que has introduit és  %', (select FACTORIAL(varfac));
+ END IF;
+END;$$ LANGUAGE plpgsql;
+
+
+-- Exercici 3 (amb While incrementant):
+CREATE OR REPLACE FUNCTION FACTORIAL_while ( N numeric) RETURNS numeric language plpgsql as $$
+declare
+  RESUL numeric:=1;
+  I numeric :=1;
+BEGIN
+  WHILE I<=N LOOP
+    RESUL:=RESUL*I;
+    I:=I+1;
+    raise notice '%', i;
+    END LOOP;
+  RETURN(RESUL);
+END; $$;
+
+do $$
+DECLARE
+  RESULTAT numeric;
+BEGIN
+    RESULTAT:= (select FACTORIAL_while(:NUMERO));
+    raise notice 'El factorial del nombre % és %', :numero, resultat;
+   END;$$ LANGUAGE plpgsql;
+
+
+
+
+/* Exercici 4 - Realitzar un programa que contingui un procediment, una funció i un bloc principal.
+El  procediment  que  rebrà  el  nom  de IMPRIMIR,  ha  de mostrar  els  números  entre  un  rang  amb  un  salt.  El  rang mínim, el rang màxim i el salt s’han de passar com a paràmetre  al  procediment.   
+A la funció que rebrà el nom de COMPROVAR_NEGATIU, s’ha de programar per a controlar:
+Que el rang mínim no sigui més gran que el rang màxim.
+Que el rang mínim, el rang màxim i el salt no sigui negatiu.
+El bloc anònim ha de preguntar a l’usuari les dades necessàries i ha de cridar a la funció per comprovar les dades i després si tot és correcta, crida al procediment per imprimir les dades. 
+*/
+
+CREATE OR REPLACE PROCEDURE IMPRIMIR  (SALT numeric,MAXR numeric, MINR numeric) language plpgsql as $$
+declare
+  I numeric:= 1;
+  SUMAX numeric:=MINR;
+BEGIN
+  WHILE SUMAX<=MAXR LOOP
+    raise notice 'VOLTA NUMERO: % AMB EL NUMERO %', i, sumax;
+    I:=I+1;
+    SUMAX:=SUMAX+SALT;
+  END LOOP;
+END;$$;
+
+
+CREATE OR REPLACE FUNCTION COMPROVAR_NEGATIU  (SALTOC numeric, MAXRC numeric, MINRC numeric) RETURNS numeric language plpgsql AS $$
+declare
+  OKS numeric:=0;
+BEGIN
+  IF MAXRC>MINRC AND SALTOC>0 AND MAXRC>0 AND MINRC>=0 THEN
+    OKS:=1;
+  END IF;
+  RETURN(OKS);
+END;$$;
+
+do $$
+DECLARE
+  NMAX numeric:=:NUMERORAX;
+  NMIN numeric:=:NUMERORIN;
+  OKC numeric;
+BEGIN
+  OKC= (select COMPROVAR_NEGATIU(:SALT,NMAX,NMIN));
+  IF OKC=1 THEN
+    call IMPRIMIR(:SALT,NMAX,NMIN);
+  ELSE
+    raise notice 'ERROR: UN DELS NUMEROS ES NEGATIU O EL RANG MINIM ES MENOR AL RANG MAXIM';
+  END IF;
+END;$$ language plpgsql;
+
+
+-- Exercici 4b (amb Funció Boolean):
+CREATE OR REPLACE PROCEDURE IMPRIMIR_bol (var_inicio numeric,var_final numeric,var_salto numeric) language plpgsql as $$
+declare
+i numeric:=1;
+BEGIN
+WHILE var_inicio<=var_final LOOP
+raise notice 'Volta número:  % amb el número %', i, var_inicio;
+i:=i+1;
+var_inicio=var_inicio+var_salto;
+END LOOP;
+END; $$;
+
+CREATE OR REPLACE FUNCTION COMPROVAR_NEGATIU_bol (var_inicio numeric, var_final numeric, var_salto numeric) RETURNS boolean
+    language  plpgsql AS $$
+BEGIN
+ IF var_inicio>=var_final THEN
+ raise notice 'El rang mínim no pot ser major que el màxim';
+ RETURN(FALSE);
+ELSIF var_salto<0 OR var_inicio<0 OR var_final<0 THEN
+ raise notice 'Els valors no poden ser 0';
+ RETURN(FALSE);
+ELSE
+ call IMPRIMIR_bol(var_inicio,var_final,var_salto);
+ RETURN(TRUE);
+END IF;
+END;$$;
+
+
+do $$
+DECLARE
+ comprovar BOOLEAN;
+ inicio numeric:= :uno;
+ fin numeric:= :dos;
+ salto numeric:= :tres;
+BEGIN
+ comprovar=(select (COMPROVAR_NEGATIU_bol(inicio,fin,salto))) ;
+END; $$ language plpgsql;
+
+
+-- Exercici 4c (amb for):
+
+CREATE OR REPLACE PROCEDURE imprimir_for (salto numeric,minim numeric,maxim numeric,num numeric) language plpgsql as $$
+  BEGIN
+   FOR i IN minim..maxim LOOP
+    raise notice 'Volta número: % amb el número %', i, num;
+    num=num+salto;
+   END LOOP;
+  END; $$;
+
+CREATE OR REPLACE FUNCTION comprovar_negatiu_for (salto numeric,minim numeric,maxim numeric,num numeric) RETURNS numeric language plpgsql
+AS $$
+declare
+    checkin numeric;
+  BEGIN
+    IF minim>=maxim OR minim<0 OR maxim<0 OR num<0 OR salto<0 THEN
+      checkin:=0;
+    ELSE
+      checkin:=1;
+    END IF;
+      RETURN (checkin);
+  END; $$;
+
+do $$
+DECLARE
+  checkin numeric;
+  num1 numeric:=:num;
+BEGIN
+  checkin= (select (comprovar_negatiu_for(:salto,:minim,:maxim,:num)));
+    IF checkin=0 THEN
+      raise notice 'Error! El mínim no pot ser major que el màxim, ni pot tenir valors negatius!';
+    ELSIF checkin=1 THEN
+      call imprimir_for(:salto,:minim,:maxim,num1);
+    END IF;
+END; $$ language plpgsql;
+
+/* Exercici 5 - Realitzar un programa que demani per pantalla l’id d’un empleat i mostri el seu codi, el seu nom, el seu càrrec (job_title) i el seu salari. Has de canviar els nom de les columnes perquè sigui (codi_empleat, nom_empleat, càrrec, salari). 
+Per realitzar aquest exercici has de fer servir una variable de tipus %rowtype.*/
+
+do $$
+DECLARE
+  VAR_EMPLO EMPLOYEES%ROWTYPE;
+BEGIN
+  SELECT *
+  INTO VAR_EMPLO
+  FROM EMPLOYEES 
+  WHERE EMPLOYEE_ID=:CODI;
+  raise notice 'CODIGO  NOMBRE  TREBALL  SALARIO';
+  raise notice '%  % % %', VAR_EMPLO.EMPLOYEE_ID,VAR_EMPLO.FIRST_NAME,VAR_EMPLO.JOB_ID, VAR_EMPLO.SALARY;
+END; $$ language plpgsql;
+
+
+/*Exercici 6 - Realitzar un programa que contingui un procediment que doni d’alta un nou càrrec (job_title) a la taula jobs. Les dades del nou càrrec s’han d’introduir per teclat. Abans d’inserir s’ha de comprovar que el valor màxim i mínim del salari no sigui negatiu i a més, que el salari mínim sigui més petit que el salari màxim. Dóna els missatges d’error corresponents*/
+
+CREATE OR REPLACE PROCEDURE DARALTA( var_codi jobs.job_id%TYPE,
+var_title jobs.job_title%TYPE,
+var_min_salary jobs.min_salary%TYPE,
+var_max_salary jobs.max_salary%TYPE
+) language plpgsql AS $$
+BEGIN
+ INSERT INTO JOBS
+ VALUES(var_codi,var_title,var_min_salary,var_max_salary);
+ raise notice 'INSERIT CORRECTAMENT';
+ COMMIT;
+END;$$;
+
+
+do $$
+BEGIN
+IF(:var_min_salary>:var_max_salary) then
+ raise notice 'SALARI INVALID';
+ELSE
+ call DARALTA(:var_codi,:var_title,:var_min_salary,:var_max_salary);
+END IF;
+END; $$ language plpgsql;
+
+
+/*Exercici 7 - Realitzar un programa per donar de baixa un càrrec (job_title). El codi del càrrec s’ha d'introduir per teclat.*/
+
+CREATE OR REPLACE PROCEDURE baixa (down jobs.job_id%TYPE) language  plpgsql AS $$
+BEGIN
+ DELETE FROM jobs
+ WHERE job_id = down;
+ raise notice 'Eliminat correctament';
+ COMMIT;
+END;$$;
+
+do $$
+BEGIN
+ call baixa(:job_down);
+END; $$ language  plpgsql;
+
+/*Exercici 8 - Realitzar un programa que contingui una funció que retorni quants empleats hi ha a un departament, aquest es passarà com a paràmetre de la funció. La funció s’anomenarà COMPTAR i es cridarà des d’un bloc anònim  o principal, i el paràmetre que se li passa a la funció se li preguntarà a l’usuari i per tant, s’ha d’introduir per teclat.*/
+
+CREATE OR REPLACE FUNCTION COMPTAR (VAR_DEPT numeric) RETURNS numeric LANGUAGE plpgsql AS $$
+declare
+  TOTAL		numeric;
+BEGIN
+	SELECT COUNT(EMPLOYEE_ID)
+	INTO total
+	FROM EMPLOYEES
+	WHERE DEPARTMENT_ID = VAR_DEPT;
+	RETURN TOTAL;
+END; $$;
+
+do $$
+DECLARE
+	VAR_DEPT numeric := :DEPT;
+	TOTAL	 numeric:= 0;
+BEGIN
+	TOTAL= (select (COMPTAR(VAR_DEPT)));
+	raise notice 'Al departament número % hi ha % treballadors', var_dept, total;
+END; $$ language plpgsql;
+
+/*Exercici 9 - Realitzar un programa que contingui una funció que retorni la suma total dels salaris dels empleats d’un departament en concret. El codi del departament s’ha d’introduir per teclat per part de l’usuari i el bloc anònim ha de cridar a una funció que realitzarà el càlcul de la suma. Aquesta funció rebrà el nom de SUMA_TOTAL.*/
+
+CREATE OR REPLACE FUNCTION suma_total (codi numeric) RETURNs numeric
+    language  plpgsql as $$
+declare
+ resultat numeric;
+BEGIN
+ SELECT SUM(SALARY)
+ INTO resultat
+ FROM EMPLOYEES
+ WHERE department_id=codi;
+RETURN resultat;
+END;$$;
+
+do $$
+BEGIN
+  raise notice 'El resultat es: %',(select (suma_total(:codi_dept)));
+END; $$ language  plpgsql;
+
+/*Exercici 10 - Realitzar un programa que ens modifiqui el valor de la comissió d’un empleat que s’introdueixi per teclat. Per a modificar aquesta comissió hem de tenir en compte que: 
+Si el salari és menor a 1000, se li afegeix el 10%.
+Sii el salari està entre 1000 i 1500, se li afegeix el 15 %. 
+Si el salari és major a 1500, se li afegeix el 20%. 
+En cas contrari, es posa la comissió a 0.*/
+
+create procedure canvi_comis (empleat EMPLOYEES.employee_id%TYPE) language plpgsql as $$
+DECLARE
+  SALARIO EMPLOYEES.SALARY%TYPE;
+  COMISION EMPLOYEES.COMMISSION_PCT%TYPE;
+BEGIN
+  SELECT SALARY
+  INTO SALARIO
+  FROM EMPLOYEES
+  WHERE EMPLOYEE_ID=empleat;
+  IF SALARIO<1000 THEN
+    COMISION:=0.1;
+  ELSIF SALARIO BETWEEN 1000 AND 1500 THEN
+    COMISION:=0.15;
+  ELSIF SALARIO>1500 THEN
+    COMISION:=0.2;
+  END IF;
+  UPDATE EMPLOYEES
+  SET COMMISSION_PCT=COMISION
+  WHERE EMPLOYEE_ID=empleat;
+	raise notice 'LA NOVA COMISSIÓ ES: %', COMISION;
+  raise notice 'COMISSIÓ MODIFICADA CORRECTAMENT';
+END; $$;
