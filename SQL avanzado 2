@@ -1,0 +1,283 @@
+--1. Calcula quant guanyen en total tots els empleats
+Select sum (salary)
+From employees;
+
+--2. Calcula quant guanyen en total, cadascun dels grups d'empleats classificats per tipus de treball (job_id)
+Select job_id, sum(salary)
+From employees
+Group by job_id;
+
+--3. Calcula el màxim salari per cadascun dels grups d'empleats classificats per tipus de treball (Job_id)
+Select job_id, max (salary)
+From employees
+Group by job_id;
+
+--4. Calcula el sou mitjà dels empleats de cada departament i després el sou mitjà dels empleats per tipus de treball.
+
+Select department_id, avg (salary)
+From employees
+Group by department_id;
+
+Select job_id, avg (salary)
+From employees
+Group by job_id;
+
+--Altre solució alternativa
+Select job_id, avg (salary), department_id
+From employees
+Group by job_id, department_id
+order by 1, 3;
+
+--5. Calcula quants empleats hi ha en  cada departament.
+SELECT department_id, count (*)
+FROM EMPLOYEES
+GROUP BY department_id;
+
+--6. Calcula quants empleats hi ha de cada tipus d'ocupació.
+SELECT job_id, count (*)
+FROM EMPLOYEES
+GROUP BY job_id;
+
+--7. Selecciona quant guanyen en total tots els empleats que són Stock Manager (job_id= ST_MAN). 
+Select job_id, sum(salary)
+from employees
+Where job_id= 'ST_MAN'
+group by job_id;
+
+Select job_id, sum(salary)
+From employees
+group by job_id
+having job_id='ST_MAN';
+
+-- Qualsevol de les dos opcions són corrrectes.
+
+--8. Visualitza l'identificador de continent i el no de paises en la taula countries que té cada continent (region_id)
+select r.region_name, count(c.country_id) as  "Total_paisos"
+from regions r
+inner join countries c on r.region_id = c.region_id
+group by r.region_name;
+
+--solució 2
+
+select r.region_name, count(c.country_id) as  "Total_paisos"
+from regions r, countries cada
+where r.region_id = c.region_id
+group by r.region_name
+having count(c.country_id)>6;
+
+--9. Visualitza els noms dels continents amb més de sis països en la taula countries
+
+select r.region_name, count(c.country_id) as  "Total_paisos"
+from regions r
+inner join countries c on r.region_id = c.region_id
+group by r.region_name
+having count(c.country_id)>6;
+
+--10. Visualitza el no de països que tenen cadascun dels continents l'identificador dels quals de region és 1,2 o 3;
+
+select region_id, count(*) as "Total_Països"
+from paises
+where region_id in (1,2,3)
+group by region_id;
+
+--11. A la taula empleats, visualitza, per uns dels managers, manager_id, el nombre d'emplets que té al seu carrec i la mitja dels salaris d'aquests empleats.
+
+Select manager_id, count(*) as "Total empleats", avg(salary) as "Mitja salari"
+From employees
+where manager_id is not null
+Group by manager_id
+order by 1;
+
+
+--12. Modifica la consulta anterior perquè aparegui el codi del manager, el seu nom  i el seu cognom.
+
+Select e.manager_id, m.first_name, m.last_name, count(*) as "Total empleats", round(avg(e.salary),2) as "Mitja salari"
+From employees e, employees m
+Where e.manager_id=m.employee_id and e.manager_id is not null
+Group by e.manager_id, m.first_name, m.last_name;
+
+
+
+-- 13 . Fes al mateix que a l'exercici 12, però en aquest cas visualitza nomes aquells managers que tenen més de 7 empleats al seu càrre  i ordernats per l'id d'empleat.
+Select e.manager_id, m.first_name, m.last_name, count(*) as "Total empleats", round(avg(e.salary),2) as "Mitja salari"
+From employees e, employees m
+Where e.manager_id=m.employee_id and e.manager_id is not null
+Group by e.manager_id, m.first_name, m.last_name
+having count(*) > 7;
+
+
+--14. Visualitza els departaments amb més de 4 empleats.
+Select department_id, count(*) as "Total empleats"
+From employees
+Group by department_id
+Having count(*)>4
+order by 2;
+
+--15. Busca el nombre màxim d'empleats per departament.
+
+select department_id, count(employee_id)
+from employees
+group by department_id
+having count(employee_id)
+          in (select max(c) from (select count(employee_id)
+              as c from employees group by department_id) as a);
+
+
+
+--16. Fes servir la consulta anterior per trobar el nom del departament que més empleats té.
+
+select e.department_id, d.department_name, count(e.employee_id) as "Màxim empleats/departament"
+from employees e, departments d
+where e.department_id=d.department_id
+group by e.department_id, d.department_name
+having count(e.employee_id)
+          in (select max(c) from (select count(employee_id)
+              as c from employees group by department_id) as a);
+
+
+--17. Selecciona per cada manager, quan guanyen en total els seus empleats, però només, per aquells casos en els quals la mitja del salari de tots els empleats sigui més gran que 3000.
+Select e.manager_id, sum(e.salary) as "Total Salary", m.first_name, m.LAST_NAME
+From employees e, employees m
+where e.manager_id=m.employee_id
+Group by e.manager_id, m.first_name, m.last_name
+having avg(e.salary)>3000
+order by 1;
+
+
+--18. Selecciona per cada manager, quants empleats tenen al seu carrec i quan guanyen en total, però només per aquells managers amb més de 6 empletats al seu càrrec.
+
+Select e.manager_id, sum(e.salary) as "Total Salary", count(*) as "Total Empleats", m.first_name, m.LAST_NAME
+From employees e, employees m
+where e.manager_id=m.employee_id
+Group by e.manager_id, m.first_name, m.last_name
+having count(*) > 6
+order by 1;
+
+--19. Fes al mateix que a la consulta anterior, però només per aquells managers que que tinguin com a codi 100, 121 o 122.
+
+Select e.manager_id, sum(e.salary) as "Total Salary", count(*) as "Total Empleats", m.first_name, m.LAST_NAME
+From employees e, employees m
+where e.manager_id=m.employee_id and e.manager_id in (100,121,122)
+Group by e.manager_id, m.first_name, m.last_name
+having count(*) > 6
+order by 1;
+
+
+--20. Calcular el nombre d'empleats que realitzen cada ofici (job_id) a cada departament. Les dades que es visualitzen són: departament, ofici (job_id) i nombre d'emplets.
+
+select department_id, job_id, count(*) as "Empleats/Departament"
+from employees
+group by department_id, job_id
+order by 1, 2;
+
+--21. Troba el nom del departament que paga més diners al més entre tots els seus empleats i quants són aquests diners.
+
+select e. department_id, department_name, sum(e.salary) as "Total Salary"
+from employees e, departments d
+where e.department_id=d.department_id
+group by e.department_id, department_name
+having sum(salary)=(Select max(c) from (select sum(salary) as c
+from employees group by department_id) as a);
+
+select e. department_id, department_name, sum(e.salary) as "Total Salary"
+from employees e, departments d
+where e.department_id=d.department_id
+group by e.department_id, department_name
+order by 3 desc
+limit 3;
+
+
+--22. Visualitza els departaments en els que seu salari mitja és major o igual que la mitja de tots els salaris
+
+SELECT department_id, round (AVG(salary),2) as "Mitja Salary"  FROM employees
+GROUP BY department_id
+HAVING AVG(salary) >=(SELECT AVG(salary) FROM employees)
+order by 1;
+
+--23. Visualitzar el nombre d'empletas del departmanet de 'SALES'
+
+select count(*) as "Nom_empleats", d.department_name
+from employees e, departments d
+where e.department_id=d.department_id 
+group by d.department_name
+having lower(d.department_name) like 'sales';
+
+
+--24. Quants departaments diferents hi ha a Seatle?
+
+select count(*) as "Total Departaments", l.city
+from departments d, locations l
+where d.location_id=l.location_id
+group by l.city
+having lower(l.city) like 'seattl%';
+
+
+
+--25. Troba quants departaments hi ha en total entre Canada i Estats Units
+
+select c.country_name, count(*), d.department_name
+from departments d, locations l, countries c
+where d.location_id=l.location_id and l.country_id=l.country_id
+and lower(c.country_name) in ('canada','united states of america')
+group by c.country_name,d.department_name;
+count(*) as "Total departaments", 
+
+
+
+--26. Troba els noms dels empleats més antics de cada departament.
+select first_name, last_name, department_id
+from employees
+where employee_id in ( select employee_id from employees where ( hire_date,
+department_id)in (select min(hire_date),department_id from employees
+group by department_id));
+
+--27.	Consulta que mostri el cognom i el número d’empleat, juntament amb el cognom i el número del seu manager. Etiquetar les columnes com a Employee, Emp#, Manager i Mgr#, respectivament.
+SELECT e.last_name "Employee", e.employee_id "EMP#",
+ j.last_name "Manager", e.manager_id "MGR#"
+FROM employees e JOIN employees j
+ON (j.employee_id = e.manager_id);
+
+--28.	Modifica la consulta anterior per mostrar tots els empleats que no tinguin manager, incloent King.
+SELECT e.last_name "Employee", e.employee_id "EMP#",
+ j.last_name "Manager", e.manager_id "MGR#"
+FROM employees e LEFT JOIN employees j
+ON (j.employee_id = e.manager_id);
+
+--29.	Consulta que mostri el cognom de l’empleat,  números de departament i tots els empleats que treballin en el mateix departament que un empleat donat. Assignar a cada columna una etiqueta adequada. Fes servir JOIN
+
+SELECT e.department_id, e.last_name, c.last_name
+FROM employees e JOIN employees c
+ON (e.department_id = c.department_id) AND
+e.last_name != c.last_name; 
+
+--30. Consulta que mostri el cognom, el càrrec, el nom del departament, el salari i el grau per a tots els empleats. Fes servir JOIN
+
+
+SELECT last_name, job_id, department_name, salary
+FROM employees LEFT JOIN departments USING (department_id)
+  JOIN job_grades 
+ ON (salary BETWEEN lowest_sal AND highest_sal)
+ ORDER BY 1;
+
+SELECT last_name, job_id, department_name, salary 
+FROM employees JOIN departments USING (department_id)
+  RIGHT JOIN job_grades 
+ ON (salary BETWEEN lowest_sal AND highest_sal)
+ ORDER BY 1;
+ 
+-- 31.	Consulta que mostri el cognom i la data de contractació de qualsevol empleat contractat després de l’empleat Davies. Fes servir JOIN
+SELECT DISTINCT(e.last_name), e.hire_date
+FROM employees e JOIN employees D
+ON (e.hire_date > D.hire_date) AND UPPER(D.last_name) = 'DAVIES';
+
+--32.	Consulta que mostri els cognoms i la data de contractació per a tots els empleats contractats abans que els seus managers, juntament amb els cognoms i data de contractació dels managers. Etiquetar les columnes com a Employee, Emp Hiredate, Manager i Mgr Hiredate, respectivament. Fes servir JOIN
+
+SELECT d.last_name, d.hire_date, e.last_name, e.hire_date
+FROM employees e , employees d
+WHERE (e.manager_id = d.employee_id) AND
+ (e.hire_date > d.hire_date);
+ 
+SELECT d.last_name, d.hire_date, e.last_name, e.hire_date
+FROM employees e JOIN employees d
+ON (e.manager_id = d.employee_id) AND
+ (e.hire_date > d.hire_date);
