@@ -1,0 +1,499 @@
+/*Primera part (Procediments i funcions)*/
+
+/*Exercici 1
+Crea una funció esmentada quantitat_metres_c que donat un carrer, un nombre i una zona ens indiqui la quantitat de metres que té una casa.
+Aquesta funció és cridarà des de un procediment emmagatzemat, esmentat printar_q_metres que haurà de mostrar un missatge indicant “La casa ubicada al carrer nom_carrer, i nombre nombre que està sitada a la zona nom_zona té nombre_metres metres.”
+Aquest procediment el cridarem des de una consola.*/
+
+create type exer_1 as (
+    v_carr varchar(80),
+    v_nom numeric(4),
+    v_metres numeric(5),
+    v_nomz varchar(60));
+
+create or replace function quantitat_metres_c (v_carrer vivenda.carrer%type, v_nombre vivenda.nombre%type, v_nomzona vivenda.nom_zona%type)
+returns exer_1 language plpgsql as $$
+declare
+    my_var exer_1;
+begin
+   select v.carrer, v.nombre, c.metres_c, v.nom_zona
+   into my_var
+    from vivenda v
+    inner join casaparticular c on v.carrer = c.carrer and v.nombre = c.nombre
+    where v.carrer =v_carrer and v.nombre=v_nombre and v.nom_zona=v_nomzona;
+   return my_var;
+end;$$;
+
+create or replace procedure printar_q_metres (v_carrer vivenda.carrer%type, v_nombre vivenda.nombre%type, v_nomzona vivenda.nom_zona%type)
+language plpgsql as $$
+    declare
+        my_var exer_1;
+    begin
+        my_var:= (select quantitat_metres_c(v_carrer,v_nombre, v_nomzona));
+        raise notice 'La casa ubicada al carrer %, i nombre % que està sitada a la zona % té % metres.',my_var.v_carr, my_var.v_nom, my_var.v_metres, my_var.v_nomz;
+    end;$$;
+
+call printar_q_metres ('Abad',24,'ALBAICÍN');
+
+/*Exercici 2
+Crea una funció esmentada mitja_metres que indicant una zona, ens retorni la mitja de m2 dels pisos que hi ha en aquella zona.  
+Aquesta funció és cridarà des d’un procediment que mostrarà el següent  missatge “La mitja de m2 de la zona nom_zona és mitjana_calculada m2”
+Aquest procediment el cridarem des de una consola.*/
+
+create type ex2 as (
+    q_metres numeric,
+    v_nom_zona varchar(60));
+
+create function mitja_metres (vnomz vivenda.nom_zona%type) returns ex2 language plpgsql as $$
+declare
+    resultat ex2;
+begin
+    select round(avg (p.metres_p),2), v.nom_zona
+    into resultat
+    from vivenda v inner join pis p on v.carrer = p.carrer and v.nombre = p.nombre and v.nom_zona=vnomz
+    group by v.nom_zona;
+    return resultat;
+end;$$;
+
+create or replace procedure printar_ex2 (vnomz vivenda.nom_zona%type) language plpgsql as $$
+declare
+    resultat ex2:=(Select mitja_metres(vnomz));
+begin
+    raise notice 'La mitja de m2 de la zona % és % metres',resultat.q_metres, resultat.v_nom_zona;
+end;$$;
+
+call printar_Ex2('CENTRO_AYUNTAMIENTO');
+
+/*Exercici 3
+Crea una funció esmentada zona_metres que donat una zona ens retorni la vivenda que menys metres té. 
+Aquesta funció és cridarà des de un procediment emmagatzemat, esmentat printar_zona_metres que haurà de mostrar un missatge indicant “La vivenda ubicada al carrer nom_carrer i nombre nombre, de la zona nom_zona té quantitat_metres metres”
+Aquest procediment el cridarem des de una consola.*/
+create type ex3 as (
+    q_metres numeric,
+    v_carrer varchar(80),
+    v_nombre numeric(4),
+    v_nom_zona varchar(60));
+
+create function zona_metres (vnomz vivenda.nom_zona%type) returns ex3 language plpgsql as $$
+declare
+    resultat ex3;
+begin
+    select metres, carrer, nombre, nom_zona
+    into resultat
+    from vivenda
+    where nom_zona=vnomz and metres = (select min(metres) from vivenda where nom_zona=vnomz);
+    return resultat;
+end;$$;
+
+create or replace procedure printar_zona_metres (vnomz vivenda.nom_zona%type) language plpgsql as $$
+declare
+    resultat ex3:=(Select zona_metres(vnomz));
+begin
+    raise notice 'La vivenda ubicada al carrer % i nombre %, de la zona % té % metres',resultat.v_carrer, resultat.v_carrer, resultat.v_nom_zona, resultat.q_metres;
+end;$$;
+
+call printar_zona_metres('CENTRO_AYUNTAMIENTO');
+
+/*Exercici 4
+Crea una funció esmentada propietari  que donat  DNI ens indiqui la quantitat de persones que té a carrer aquest propietari. 
+Aquesta funció és cridarà des de un procediment emmagatzemat, esmentat printar_propietari que haurà de mostrar un missatge indicant “El propietari amb DNI DNI_propietari, amb nom nom_propietari  i cognoms cognoms_propietari, té al seu càrrec quantitat_persones.”
+Aquest procediment el cridarem des de una consola.*/
+create type ex4 as (
+    q_persones numeric,
+    dni_prop varchar(12),
+    nom_prop varchar(20),
+    cog_prop varchar(40));
+
+create function q_persona (dnip persona.dni%type) returns ex4 language plpgsql as $$
+declare
+    resultat ex4;
+begin
+    select count(*), p.dni, p.nom_persona, p.cognoms_persona
+    into resultat
+    from persona p, persona p1
+    where p.dni=p1.dni_c and p.dni_c is null and p.dni like dnip
+    group by p.dni, p.nom_persona, p.cognoms_persona;
+    return resultat;
+end;$$;
+
+create or replace procedure printar_propietari (dnip persona.dni%type) language plpgsql as $$
+declare
+    resultat ex4:=(Select q_persona (dnip));
+begin
+    raise notice 'El propietari amb DNI %, amb nom %  i cognoms %, té al seu càrrec %',resultat.dni_prop, resultat.nom_prop, resultat.cog_prop, resultat.q_persones;
+end;$$;
+
+call printar_propietari('11445287A');
+
+
+/*Exercici 5
+Crea una funció  esmentada Quantitat_pisos que li passaràs una zona i t’indicará la quantitat de pisos que hi ha en aquella zona, on habiten més de 5 persones.
+Aquesta funció és cridarà des d’un procediment emmagatzemat, esmentat print_q_pisos que haurà de mostrar un missatge indicant “A la zona nom_zona, hi ha  quantitat_pisos pisos on habiten més de 5 persones”
+Aquest procediment el cridarem des de una consola.*/
+
+create type ex5 as (
+    q_pisos numeric,
+    nom_zona varchar(60));
+
+create function q_pisos (vnomz vivenda.nom_zona%type) returns ex5 language plpgsql as $$
+declare
+    resultat ex5;
+begin
+    select count( 1), nom_zona
+    into resultat
+    from (select count(*), v.nom_zona
+    from vivenda v, persona p
+    where p.carrer=v.carrer and p.nombre=v.nombre and v.tipus_vivenda='B' and v.nom_zona like vnomz
+    group by p.carrer, p.nombre, v.tipus_vivenda, v.nom_zona
+    having count(*) > 3) a group by nom_zona;
+   return resultat;
+end;$$;
+
+create or replace procedure print_q_pisos (vnomz vivenda.nom_zona%type) language plpgsql as $$
+declare
+    resultat ex5:=(Select q_pisos (vnomz));
+begin
+    raise notice 'A la zona %, hi ha  % pisos on habiten més de 5 persones',resultat.nom_zona, resultat.q_pisos;
+end;$$;
+
+call print_q_pisos('CAMINO DE RONDA');
+
+
+-------------------------Segona part (Excepcions, cursors i transaccions)
+
+/*Exercici 6
+Crea un procediment, que li passaràs per paràmetre un carrer i un nombre, i et diran quantes persones habiten en aquell domicili, tant si és un pis com una casa. En el cas que sigui un bloc, haurà de comptar el total de persones que habiten.
+Per fer aquest procediment has de tenir en compte:
+Que el carrer i el nombre existeix. Per controlar-ho realitzaras una funció que darrerament cridaràs des del procediment.
+Hauràs de realitzar la gestió dels errors fent servir excepcions.
+Quan s’executi el procediment haurà de mostrar un missatge indicant “ Al carrer  a , i nombre  b, què és una casa o pis, hi habiten  c persones”.*/
+create type ex6 as(
+    q_persones numeric,
+    carrer varchar(80),
+    nombre numeric (4));
+
+create type ex6_bis as (
+    carrer varchar(80),
+    nombre numeric (4));
+
+create or replace function compr_dom (vcarrer persona.carrer%type, vnombre persona.nombre%type) returns boolean language plpgsql as $$
+    declare
+        comprova ex6_bis;
+    begin
+        select carrer, nombre
+        into strict comprova
+        from persona
+        where carrer like vcarrer or nombre=vnombre
+        limit 1;
+        return true;
+    exception
+        when no_data_found then
+            return false;
+ end;$$;
+
+create or replace procedure ex6 (vcarrer persona.carrer%type, vnombre persona.nombre%type) language  plpgsql as $$
+    declare
+            resultat ex6;
+            ex6 cursor for select count (*), carrer, nombre
+            from persona
+            where carrer like vcarrer and nombre=vnombre
+            group by carrer, nombre;
+    begin
+        if (select compr_dom (vcarrer, vnombre)) is true then
+            open ex6;
+            loop
+                fetch ex6 into resultat;
+                exit when not found;
+                raise notice 'Al carrer % , nombre %, què és una casa o pis, hi habiten % persones', resultat.carrer, resultat.nombre, resultat.q_persones;
+            end loop;
+            close ex6;
+        else
+           raise exception 'Error! Les dades introduides són incorrectes!'
+			using hint ='Introdueix un altre carrer o nombre!';
+        end if;
+    end; $$;
+
+call ex6 ('Adormidera',949);
+call ex6 ('Adormida',94985);
+
+
+/*Exercici 7
+Crea un procediment emmagatzemat que li passaràs dni d’una persona i et retornarà la quantitat de persones que té al seu càrrec. 
+Per fer aquest procediment has de tenir en compte:
+Que la persona que existeix. Per controlar-ho realitzarem una funció que darrerament cridarem des del procediment.
+Has de gestionar els errors fent servir excepcions. Si la persona que has introduït no té cap persona al seu càrrec, hauràs de gestionar-ho.
+Quan s’executi el procediment haurà de mostrar un missatge indicant “La persona amb DNI  a, nom i cognoms b i c, té al seu càrrec les següents persones nom i cognoms de les persones que té al seu càrrec”.
+Aquest procediment el cridarem des de una consola.*/
+create type ex7 as (
+    dni_prop varchar(12),
+    nom_prop varchar(20),
+    cog_prop varchar(40),
+    nom_per varchar(20),
+    cog_per varchar(40));
+create or replace function compr_dni (dnip persona.dni%type) returns boolean language plpgsql as $$
+    declare
+        vdnip persona.dni%type;
+    begin
+        select dni
+        into strict vdnip
+        from persona
+        where dni like dnip;
+        return true;
+    exception
+        when no_data_found then
+            return false;
+        when others then
+            return false;
+ end;$$;
+
+create or replace procedure ex7 (dnip persona.dni%type) language  plpgsql as $$
+    declare
+            resultat ex7;
+            ex7 cursor for select p1.dni, p1.nom_persona, p1.cognoms_persona, p.nom_persona as "nom", p.cognoms_persona as "cognom"
+            from persona p, persona p1
+            where p.dni_c=p1.dni and p1.dni like dnip;
+    begin
+        if (select compr_dni (dnip)) is true then
+            open ex7;
+            loop
+                fetch ex7 into resultat;
+                exit when not found;
+                raise notice 'La persona amb DNI  %, nom i cognoms % i %, té al seu càrrec les següents persones %  % ', resultat.dni_prop, resultat.nom_prop, resultat.cog_prop, resultat.nom_per, resultat.cog_per;
+            end loop;
+        else
+           raise exception 'Error! El DNI és inorrecte!'
+			using hint ='Introdueix un altre DNI!';
+        end if;
+    end; $$;
+call ex7 ('71729154A');
+
+/*Exercici 8
+Realitza un procediment que li passaràs per paràmetre una zona  i que et retornarà els pisos que estan ubicats en aquella zona on viuen més de  4 persones i són més gran de 45m. D’aquest pisos volem actualitzar els seus metres en un 25%.
+Per fer aquest procediment has de tenir en compte:
+Que la zona introduïda existeix. Per controlar-ho realitzarem una funció que darrerament cridarem des del procediment.
+Has de gestionar els errors fent servir excepcions. Si la zona no existeix, hauràs de gestionar-ho.
+Has de fer un cursor d’atualització.
+Quan s’executi el procediment haurà de mostrar un missatge indicant quin són el transports i els imports actualitzats.*/
+
+create function comp_zona (nzona zonaurbana.nom_zona%type) returns boolean language  plpgsql as $$
+    declare
+        nzona2 zonaurbana.nom_zona%type;
+    begin
+        select nom_zona
+        into strict nzona2
+        from zonaurbana
+        where nom_zona= nzona;
+        return true;
+	exception
+        when no_data_found then
+            return false;
+        when others then
+            return false;
+ end;$$;
+
+CREATE or replace PROCEDURE exer_8 (nzona zonaurbana.nom_zona%type) language plpgsql as $$
+    declare
+        ex8 cursor for select p.carrer, p.nombre, v.nom_zona, p2.metres_p
+            from vivenda v inner join persona p on v.carrer = p.carrer and v.nombre = p.nombre
+            inner join pis p2 on p.carrer=p2.carrer and p.nombre=p2.nombre
+            where p2.metres_p > 45 and v.nom_zona like nzona
+            group by p.carrer, p.nombre, v.tipus_vivenda, v.nom_zona, p2.metres_p
+            having count(*) > 4;
+                    
+    begin
+        if (select comp_zona(nzona)) is false then
+           raise exception 'Error! La zona introuïda és errònia!'
+			using hint ='Introdueix una altra zona!';
+        else
+            FOR v_ex8 IN ex8
+            LOOP
+                update pis
+                set metres_p = metres_p*1.25
+                where v_ex8.metres_p=pis.metres_p and v_ex8.nombre=pis.nombre and v_ex8.carrer like pis.carrer;
+            end loop;
+            FOR v_ex8 IN ex8
+                LOOP
+                    raise notice 'El pis ubicat a la zona %, carrer % i nombre % ha augmentat els seus metres a %', v_ex8.nom_zona, v_ex8.carrer, v_ex8.nombre, v_ex8.metres_p;
+                end loop;
+        end if;
+    end
+$$;
+call exer_8 ('CAMINO DE RONDA');
+
+/*Exercici 9
+Volem crear un procediment per inserir registres a la taula persona. 
+Per fer aquest exercici has de tenir en compte:
+Has de controlar que abans d’inserir un nou registre, no existeix. Has de fer una funció per comprovar-ho que després cridaràs des del procediment.
+Has de controlar els possibles errors, amb les excepcions que consideris.
+En el cas que tot sigui correcte, realitzaràs un commit, en cas contrari la transacció no es podrà dur a terme i donaràs un missatge d’error o bé d'èxit.
+Has de tenir en compte les foreign key i els not null.*/
+
+create type ex9 as (
+	dnip varchar(10),
+	carrer varchar(80),
+	nombre integer );
+
+create or replace function compr_insercio (dnip persona.dni%type, vcarrer persona.carrer%type, vnombre persona.nombre%type) returns boolean language plpgsql as $$
+    declare
+       comprov ex9;
+    begin
+        select dni, carrer, nombre
+        into strict comprov
+        from persona
+        where dni like dnip or carrer like vcarrer or nombre like vnombre;
+        return true;
+    exception
+        when no_data_found then
+            return false;
+        when others then
+            return false;
+ end;$$;
+
+
+create or replace procedure inserir_persona (dni_i persona.dni%type, nom_i persona.nom_persona%type, cognom_i persona.cognoms_persona%type,
+    dnic_i persona.dni_c%type, carrer_i persona.carrer%type, nombre_i persona.nombre%type) language plpgsql as $$
+
+begin
+	if (select (compr_insercio (dni_i, carrer_i, nombre_i))) is false then
+		insert into persona (dni, nom_persona, cognoms_persona, dni_c, carrer, nombre) values
+		(dni_i, nom_i, cognom_i, dnic_i, carrer_i, nombre_i);
+		raise notice 'Registre introduït correctament!';
+	else
+		raise exception 'Error! Revisa les dades!'
+			using hint ='Introdueix un DNi, carrer o nombre correcte!';
+	end if;
+end;$$;
+
+call inserir_persona ('71773599V', 'Prova', 'Prova', null, 'Aiguablava', 26);
+call inserir_persona ('71773599V', 'Prova', 'Prova', null, 'Abarqueros', 26);
+
+-------------------------Tercera part (Triggers)
+/*Exercici 10
+Volem crear un trigger que llançarà una excepció cada vegada que  actualitzem la quantitat de  metres de la taula pis.
+Si la quantitat és més petita que l’actual, haurà de sortir un missatge que indiqui “El nou valor dels metres metres_p_nou, no pot ser més petit que el valor anterior metres_p_anterior”. Aquest missatge fa referència a l’excepció.
+Has de crear un funció de trigger, que llançarà l’excepció.
+Has de crear un trigger de tipus BEFORE i  row-level per l'operació UPDATE.
+Has d’aportar les ordres per comprovar el funcionament del disparador.*/
+
+create or replace function ex11() returns trigger language plpgsql
+as $$
+begin
+if new.metres_p < old.metres_p then
+    raise exception 'El nou valor dels metres %, no pot ser més petit que el valor anterior %', new.metres_p, old.metres_p;
+end if;
+return new;
+end;$$;
+
+
+create trigger b_meter_update before update
+    on pis for each row
+    execute procedure ex11();
+
+
+SELECT * from pis where carrer like 'Abanilla';
+UPDATE pis set metres_p = 55 where carrer like 'Abanilla';
+UPDATE pis set metres_p = 50 where carrer like 'Abanilla';
+
+
+/*Exercici 11
+Crearem tres triggers, un per automatizar l’actualització dels noms d’una persona  a la taula persona, un altre que no permet esborrar cap registre de la taula persona un altre per enregistrar els canvis. 
+Aquests triggers estan associats a una taula i amb una funció de trigger.
+La funció  trigger update_dades ()  et permetrà actualitzar el camp nom de la taula persona.
+Si el nou nom és diferent de l’actual.
+La funció no_esborrar_dades() s’encarregarà de no permetre esborrar cap dada d’una taula concreta.
+La funció registrar_canvis () de tipus statement-level que s'executarà després de les sentències INSERT, UPDATE i DELETE. La funció executada per aquest trigger deixarà dades de l'execució a la taula canvis.
+CREATE TABLE canvis (
+  timestamp_ TIMESTAMP WITH TIME ZONE default NOW(),
+  nom_trigger text,
+  tipus_trigger text,
+  nivell_trigger text,
+  ordre text
+);
+Has d’aportar les ordres per comprovar el funcionament dels disparadors.
+NOTA → Per cada funció de trigger, s’ha de configurar el seu trigger corresponent.*/
+
+
+create or replace function update_dades() returns trigger language plpgsql
+as $$
+begin
+if new.nom_persona like old.nom_persona then
+    raise exception 'El nou nom % ha de ser diferent de %', new.nom_persona, old.nom_persona;
+end if;
+return new;
+end;
+$$;
+
+
+create trigger b_update_dades before update
+    on persona for each row
+    execute procedure update_dades();
+
+
+SELECT * from persona where dni like '71729154A';
+UPDATE persona set nom_persona = 'Marlen' where dni like '71729154A';
+UPDATE persona set nom_persona = 'prova' where dni like '71729154A';
+
+
+-- No esborrar dades
+create or replace function no_esborrar_dades() returns trigger language plpgsql
+as $$
+begin
+raise exception 'No es poden esborrar dades!';
+return new;
+end;$$;
+
+
+create trigger b_no_esborrar_dades before delete
+    on persona
+    execute procedure no_esborrar_dades();
+
+
+SELECT * from persona where dni like '71729154C';
+DELETE from persona where dni like '71729154C';
+
+
+--registrar canvis
+
+CREATE TABLE canvis (
+  timestamp_ TIMESTAMP WITH TIME ZONE default NOW(),
+  nom_trigger text,
+  tipus_trigger text,
+  nivell_trigger text,
+  ordre text
+);
+
+-- definim la funció de trigger
+
+CREATE OR REPLACE FUNCTION registrar_canvis() RETURNS TRIGGER language plpgsql AS $$
+
+  BEGIN
+    
+    INSERT INTO canvis (
+                nom_trigger,
+				tipus_trigger,
+				nivell_trigger,
+				ordre) 
+        VALUES (               
+                TG_NAME,
+                TG_WHEN,
+                TG_LEVEL,
+                TG_OP
+               );
+
+    RETURN NULL;
+  END;$$;
+
+-- configurem el trigger
+
+CREATE TRIGGER aiud_registrar_canvis AFTER INSERT OR UPDATE OR DELETE
+    ON persona FOR EACH STATEMENT 
+    EXECUTE PROCEDURE registrar_canvis();
+
+
+INSERT into persona (dni, nom_persona, cognoms_persona, dni_c, carrer, nombre)
+values ('123456789A', 'prova', 'prova2', '71729154A', 'Abad', 24);
+
+UPDATE persona set nom_persona = 'prova123', cognoms_persona = 'prova2 prova3' where dni like '123456789A';
+ALTER table persona disable trigger b_no_esborrar_dades;
+DELETE from persona where dni like '123456789A';
+ALTER table persona enable trigger b_no_esborrar_dades;
