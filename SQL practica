@@ -1,0 +1,136 @@
+/*Ex1. Indicar quantes persones habiten en cadascuna de les cases que hi ha ubicades a la zona de Realejo, d'aquelles cases que siguin inferior a 200m2. (2 punts)*/
+select count (*)
+from vivenda v, persona p
+where lower(v.nom_zona)='realejo' and v.metres < 200 and v.tipus_vivenda = 'C' and v.carrer=p.carrer and v.nombre=p.nombre;
+
+select v.carrer, v.nombre,v.metres, count(*)
+from vivenda v, persona p
+where lower(v.nom_zona)='realejo' and v.metres
+< 200 and v.tipus_vivenda = 'C' and v.carrer=p.carrer and v.nombre=p.nombre
+group by v.carrer, v.nombre,v.metres;
+
+/*Ex2. Indica el DNI, nom i Cognom del propietari que té la Casa Particular amb més m2.  (1 punts)*/
+select p.dni, p.nom_persona, p.cognoms_persona, cp.metres_c
+from persona p, casaparticular cp
+where cp.carrer=p.carrer and cp.nombre=p.nombre and cp.metres_c=(select max(metres_c) from casaparticular);
+
+/*Ex3. Indica quantes cases hi ha a la zona de Bobadilla que estiguin ubicats en nombres imparells i que tinguin entre 100 i 202 m2. (1 punts)*/
+select count (*)
+from vivenda
+where lower(nom_zona) like '%bobad%' and mod(nombre,2)!=0 and metres between 100 and 202 and tipus_vivenda='C';
+
+/*Ex4. Indica quants pisos hi ha a la zona de Cerrillo de Maracena que estiguin ubicats en nombres imparells i que tinguin més de 45m2 (2 punts)*/
+select count (*) --p.carrer, p.nombre, p.metres_p, v.nom_zona, p.planta, p.escala, p.porta
+from vivenda v, pis p
+where lower(v.nom_zona) like 'cerrillo%' and mod(p.nombre,2)<>0 and
+p.metres_p >45 and v.carrer=p.carrer and p.nombre=v.nombre;
+
+/*Ex5. Indicar mitja de m2 dels àtics per zones. Entenen que els àtics estan ubicats a la planta 8, (2 punts)*/
+select round(avg(p.metres_p),2), v.nom_zona
+from pis p, vivenda v
+where v.carrer = p.carrer and v.nombre = p.nombre and  p.planta='8'
+group by v.nom_zona
+order by 2, 1;
+
+/*Ex6. Noms i Cognoms d'aquells habitants que viuen a cases que tenen més m2 ubicades a la zona de Camino de Ronda, que el pis més gran que hi ha a la zona de Bobadilla (2 punts)*/
+select p.nom_persona, p.cognoms_persona, v.nom_zona, v.metres
+from persona p, vivenda v
+where p.carrer=v.carrer and v.nombre = p.nombre and v.tipus_vivenda='C' and lower(v.nom_zona) like '%camino%' and v.metres > (
+select max(metres)
+from vivenda
+where tipus_vivenda='B' and lower(nom_zona) like '%bobad%')
+order by 4;
+
+/*Ex1. Indicar el carrer, nombre, escala i planta de totes les vivendes que es troben dins la zona de l'Albaicín i que qualsevol del seus dos cognoms siguin Rodríguez.  Has de tenir en compte el format del cognom (majúscules, minúscules i accents)  (2 punts)*/
+select v.carrer, v.nombre, p.escala, p.planta, v.nom_zona, per.cognoms_persona
+from vivenda v, pis p, persona per
+where v.carrer=p.carrer and v.nombre=p.nombre and per.dni=p.dni_p
+and lower(v.nom_zona) like 'alba%' and (lower(cognoms_persona)like '%rodríguez%' or
+lower(cognoms_persona) like '%rodriguez%');
+/*Ex2. Indicar el nombre de cases Particulars on viuen més de 4 persones.  (1 punts)*/
+select count(*), p.carrer, p.nombre, v.tipus_vivenda
+from vivenda v, persona p
+where p.carrer=v.carrer and p.nombre=v.nombre and v.tipus_vivenda='C'
+group by p.carrer, p.nombre, v.tipus_vivenda
+having count(*) > 4;
+
+select v.carrer, v.nombre, count(*)
+from vivenda v, persona p
+where v.carrer = p.carrer and v.nombre = p.nombre and v.tipus_vivenda='C'
+group by v.carrer, v.nombre
+having count(*) >4;
+
+select c.carrer, c.nombre, count(*)
+from casaparticular c, persona p
+where c.carrer=p.carrer and c.nombre=p.nombre
+group by c.carrer, c.nombre
+having count(*) > 4;
+/*Ex3. Indicar nom, cognoms, DNI i la quantitat de persones que tenen al seu càrrec aquelles persones que són caps de família.La quantitat de persones fa referència a la gent que hi viu al pis.  (2 punts)*/
+
+Select cap.dni_c, p.nom_persona, p.cognoms_persona, count(*)
+From persona p, persona cap
+Where cap.dni_c=p.dni
+Group by cap.dni_c, p.nom_persona, p.cognoms_persona
+order by 1;
+
+select p.dni, p.nom_persona, p.cognoms_persona, count(*)
+from  persona cap, persona p, vivenda v
+where cap.dni_c=p.dni and p.nombre=v.nombre and p.carrer=v.carrer and v.tipus_vivenda='B'
+group by p.dni, p.nom_persona, p.cognoms_persona;
+
+select p.dni, p.nom_persona, p.cognoms_persona, count(*)
+from  persona cap, persona p, pis pe
+where cap.dni_c=p.dni and pe.dni_p=p.dni
+group by p.dni, p.nom_persona, p.cognoms_persona;
+
+/*Ex4. Nom i Cognom de les tres persones que tenen les propietats més gran per zona. Ordena el resultats de menor a major (m2).  (1 punts)*/
+select nom_persona, cognoms_persona, v.metres, v.nom_zona
+from persona p, vivenda v
+where p.carrer=v.carrer and p.nombre=v.nombre
+group by v.nom_zona,p. cognoms_persona, p.nom_persona, v.metres
+having v.metres=(select max(metres) from vivenda where v.nom_zona=nom_zona)
+order by 4,3 asc
+limit 3;
+
+/*Ex5. Indicar per zones quines són les cases més grans i les cases més petites. Has de mostrar tres columnes: zona, +m2 i -m2.  (2 punts)*/
+select max(metres), min(metres), nom_zona
+from vivenda
+where tipus_vivenda='C'
+group by nom_zona
+order by 3;
+
+select max(v.metres) as "+m2", min(v2.metres) as "-m2", v.nom_zona
+from vivenda v, vivenda v2
+where v.carrer=v2.carrer and v.nombre=v2.nombre and v.tipus_vivenda='C'
+group by v.nom_zona
+order by 3;
+
+/*Ex6. Quina és la zona més poblada i la menys poblada? Indica la resposta amb dos columnes que mostrin zona_mes_poblada i zona_menys_poblada. (2 punts)*/
+from vivenda v, persona p
+where v.carrer = p.carrer and v.nombre = p.nombre
+group by v.nom_zona
+having count(p.dni)= (select min(c) from (select count(p.dni) as c from vivenda v, persona p  where v.carrer = p.carrer and v.nombre = p.nombre group by v.nom_zona) as a)
+UNION
+select count(p.dni) as "Població min/max",  v.nom_zona as "Zona"
+from vivenda v, persona p
+where v.carrer = p.carrer and v.nombre = p.nombre
+group by v.nom_zona
+having count(p.dni)= (select max(d) from (select count(p.dni) as d from vivenda v, persona p  where v.carrer = p.carrer and v.nombre = p.nombre group by v.nom_zona) as b);
+
+select v.nom_zona AS "zona_menos_poblada",
+((select v.nom_zona
+from vivenda v, persona p
+where v.carrer = p.carrer and v.nombre = p.nombre
+group by v.nom_zona
+having  count(p.dni) in (
+select max(c) from (select (count(p.dni)) as c
+from vivenda v, persona p
+where v.carrer = p.carrer and v.nombre = p.nombre
+group by v.nom_zona)as a)))AS "zona_más_poblada"
+from vivenda v, persona p
+where v.carrer = p.carrer and v.nombre = p.nombre
+group by v.nom_zona
+having count(p.dni)  in  (select min(d) from (select (count(p.dni)) as d
+from vivenda v, persona p
+where v.carrer = p.carrer and v.nombre = p.nombre
+group by v.nom_zona)as b);
